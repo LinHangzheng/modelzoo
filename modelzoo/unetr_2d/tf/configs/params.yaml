@@ -18,8 +18,10 @@ description: "FC-MNIST base model params"
 train_input:
     shuffle: True
     shuffle_buffer_size : 10000
+    augment_data: True
     dataset_path: 'data' # Place to store data
-    batch_size: 256
+    train_batch_size: 256
+    eval_batch_size: 1024
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
     train_test_split: 0.80
@@ -27,6 +29,7 @@ train_input:
     IR_threshould: 0.075
     patch_size: 96
     patch_step: 320
+    dataset: "IR_dataset"
 model:
     classes_num: 10
     hidden_size: 768

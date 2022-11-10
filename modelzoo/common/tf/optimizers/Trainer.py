@@ -18,7 +18,7 @@ The trainer class.
 import numpy as np
 import tensorflow as tf
 from tensorflow.compat.v1.train.experimental import DynamicLossScale
-from tensorflow.python.keras.mixed_precision.experimental.loss_scale_optimizer import (
+from tensorflow.python.keras.mixed_precision.loss_scale_optimizer import (
     LossScaleOptimizer,
 )
 from tensorflow.python.training.experimental.loss_scale_optimizer import (
