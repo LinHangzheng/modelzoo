@@ -24,12 +24,13 @@ train_input:
     eval_batch_size: 1024
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
-    train_test_split: 0.80
+    train_test_split: 0.79
     num_classes: 6
     IR_threshould: 0.075
     patch_size: 96
     patch_step: 320
     dataset: "IR_dataset"
+    extract_layers: [3, 6, 9, 12]
 model:
     classes_num: 10
     hidden_size: 768

@@ -27,7 +27,7 @@ from modelzoo.common.tf.metrics.dice_coefficient import dice_coefficient_metric
 from modelzoo.common.tf.optimizers.Trainer import Trainer
 from modelzoo.common.tf.TFBaseModel import TFBaseModel
 from modelzoo.unet.tf.utils import color_codes
-
+from layers import TransformerBlock, ConvBlock, DeConvBlock
 
 class UNetr2DModel(TFBaseModel):
     """
@@ -46,6 +46,20 @@ class UNetr2DModel(TFBaseModel):
 
         ### Model params
         mparams = params["model"]
+        hidden_size = mparams['hidden_size']
+        heads_num = mparams['heads_num']
+        mlp_dim = mparams['mlp_dim']
+        encoders_num = mparams['encoders_num']
+        # mlp_head_dim = params['model']['mlp_head_dim']
+        classes_num = mparams['classes_num']
+        dropout_rate = mparams['dropout_rate']
+        tf_summary = mparams["tf_summary"]
+        layer_norm_epsilon = mparams["layer_norm_epsilon"]
+        boundary_casting = mparams["boundary_casting"]
+        ret_scores = mparams['ret_scores']
+        extract_layers = mparams['extract_layers']
+        ##print("TFBaseModel dtype: ", self.policy)
+        
         self.skip_connect = mparams["skip_connect"]
         self.eval_ignore_classes = mparams.get("eval_ignore_classes", [])
 
@@ -59,8 +73,6 @@ class UNetr2DModel(TFBaseModel):
         self.nonlinearity = getattr(tf.keras.layers, self.nonlinearity)(
             **{**self.nonlinearity_params, **dict(dtype=self.policy)},
         )
-        self.encoder_filters = mparams["encoder_filters"]
-        self.decoder_filters = mparams["decoder_filters"]
 
         self.initial_conv_filters = mparams.get("initial_conv_filters")
         self.convs_per_block = mparams.get(
@@ -70,23 +82,20 @@ class UNetr2DModel(TFBaseModel):
         self.eval_metrics = mparams.get(
             "eval_metrics", ["mIOU", "DSC", "MPCA", "Acc"]
         )
-        assert (
-            len(self.encoder_filters) == len(self.decoder_filters) + 1
-        ), "Number of encoder filters should be equal to number of decoder filters + 1 (bottleneck)"
 
-        self.initializer = mparams["initializer"]
-        self.initializer_params = mparams.get("initializer_params")
-        if self.initializer_params:
-            self.initializer = getattr(
-                tf.compat.v1.keras.initializers, self.initializer
-            )(**self.initializer_params)
+        # self.initializer = mparams["initializer"]
+        # self.initializer_params = mparams.get("initializer_params")
+        # if self.initializer_params:
+        #     self.initializer = getattr(
+        #         tf.compat.v1.keras.initializers, self.initializer
+        #     )(**self.initializer_params)
 
-        self.bias_initializer = mparams["bias_initializer"]
-        self.bias_initializer_params = mparams.get("bias_initializer_params")
-        if self.bias_initializer_params:
-            self.bias_initializer = getattr(
-                tf.compat.v1.keras.initializers, self.bias_initializer
-            )(**self.bias_initializer_params)
+        # self.bias_initializer = mparams["bias_initializer"]
+        # self.bias_initializer_params = mparams.get("bias_initializer_params")
+        # if self.bias_initializer_params:
+        #     self.bias_initializer = getattr(
+        #         tf.compat.v1.keras.initializers, self.bias_initializer
+        #     )(**self.bias_initializer_params)
 
         # CS util params for layers
         self.boundary_casting = mparams["boundary_casting"]
@@ -96,13 +105,30 @@ class UNetr2DModel(TFBaseModel):
         self.log_image_summaries = mparams.get("log_image_summaries", False)
         self.mixed_precision = mparams["mixed_precision"]
 
+
+
+        self.transformer = TransformerBlock(
+                classes_num, 
+                hidden_size,
+                dropout_rate,
+                layer_norm_epsilon,
+                encoders_num,
+                heads_num,
+                mlp_dim,
+                ret_scores,
+                extract_layers,
+                boundary_casting,
+                tf_summary
+        )
+        
+
         # Model trainer
         self.trainer = Trainer(
             params=params["optimizer"],
             tf_summary=self.tf_summary,
             mixed_precision=self.mixed_precision,
         )
-    
+
     # def _unet_block(self, x, block_idx, n_filters, encoder=True):
     #     with tf.compat.v1.name_scope(f"block{block_idx}"):
     #         skip_connection = None
@@ -153,6 +179,9 @@ class UNetr2DModel(TFBaseModel):
     #         return x, x
 
     def build_model(self, features, mode):
+        x = features
+        is_training = mode == tf.estimator.ModeKeys.TRAIN
+        
         pass
     
     # def build_model(self, features, mode):

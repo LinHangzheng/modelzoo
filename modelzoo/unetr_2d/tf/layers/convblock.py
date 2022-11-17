@@ -1,8 +1,6 @@
-from modelzoo.common.tf.layers.DenseLayer import DenseLayer
 from modelzoo.common.tf.layers.BaseLayer import BaseLayer
 from modelzoo.common.tf.layers.ActivationLayer import ActivationLayer
 from modelzoo.common.tf.layers.Conv2DLayer import Conv2DLayer
-from modelzoo.common.tf.layers.Conv2DTransposeLayer import Conv2DTransposeLayer
 from modelzoo.common.tf.layers.LayerNormalizationLayer import LayerNormalizationLayer
 class ConvBlock(BaseLayer):
     """MLP head of vision transformer.
