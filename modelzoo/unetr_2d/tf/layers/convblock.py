@@ -11,7 +11,8 @@ class ConvBlock(BaseLayer):
         The number of classes to predict.
     """
     
-    def __init__(self, output_n, 
+    def __init__(self, 
+                 output_n, 
                  data_format,
                  enable_bias,
                  initializer,

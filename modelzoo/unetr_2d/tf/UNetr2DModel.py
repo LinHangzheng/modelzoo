@@ -44,6 +44,7 @@ class UNetr2DModel(TFBaseModel):
 
         self.logging_dict = {}
 
+        input_dim = params["train_input"]["input_dim"]
         ### Model params
         mparams = params["model"]
         hidden_size = mparams['hidden_size']
@@ -83,19 +84,19 @@ class UNetr2DModel(TFBaseModel):
             "eval_metrics", ["mIOU", "DSC", "MPCA", "Acc"]
         )
 
-        # self.initializer = mparams["initializer"]
-        # self.initializer_params = mparams.get("initializer_params")
-        # if self.initializer_params:
-        #     self.initializer = getattr(
-        #         tf.compat.v1.keras.initializers, self.initializer
-        #     )(**self.initializer_params)
+        self.initializer = mparams["initializer"]
+        self.initializer_params = mparams.get("initializer_params")
+        if self.initializer_params:
+            self.initializer = getattr(
+                tf.compat.v1.keras.initializers, self.initializer
+            )(**self.initializer_params)
 
-        # self.bias_initializer = mparams["bias_initializer"]
-        # self.bias_initializer_params = mparams.get("bias_initializer_params")
-        # if self.bias_initializer_params:
-        #     self.bias_initializer = getattr(
-        #         tf.compat.v1.keras.initializers, self.bias_initializer
-        #     )(**self.bias_initializer_params)
+        self.bias_initializer = mparams["bias_initializer"]
+        self.bias_initializer_params = mparams.get("bias_initializer_params")
+        if self.bias_initializer_params:
+            self.bias_initializer = getattr(
+                tf.compat.v1.keras.initializers, self.bias_initializer
+            )(**self.bias_initializer_params)
 
         # CS util params for layers
         self.boundary_casting = mparams["boundary_casting"]
@@ -121,7 +122,111 @@ class UNetr2DModel(TFBaseModel):
                 tf_summary
         )
         
-
+        self.decoder0 = tf.keras.Sequential([
+            ConvBlock(                 
+                 32, 
+                 self.data_format,
+                 self.enable_bias,
+                 self.initializer,
+                 self.bias_initializer,
+                 layer_norm_epsilon,
+                 kernel_size=3,
+                 boundary_casting = boundary_casting,
+                 tf_summary=tf_summary, ),
+            ConvBlock(                 
+                 64, 
+                 self.data_format,
+                 self.enable_bias,
+                 self.initializer,
+                 self.bias_initializer,
+                 layer_norm_epsilon,
+                 kernel_size=3,
+                 boundary_casting = boundary_casting,
+                 tf_summary=tf_summary, )
+        ])
+        
+        self.decoder3 = tf.keras.Sequential([
+            DeConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary),
+            DeConvBlock(                 
+                256, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary),
+            DeConvBlock(                 
+                128, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary),
+        ])
+        
+        
+        self.decoder6 = tf.keras.Sequential([
+            DeConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary),
+            DeConvBlock(                 
+                256, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary)
+        ])
+        
+        self.decoder9 = DeConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary)
+    
+        self.decoder12_upsampler = Conv2DTransposeLayer(
+                filters=output_n,
+                kernel_size=2,
+                strides=2,
+                padding="same",
+                data_format=data_format,
+                use_bias=enable_bias,
+                kernel_initializer=initializer,
+                bias_initializer=bias_initializer,
+                boundary_casting=boundary_casting,
+                tf_summary=tf_summary,
+                dtype=self.dtype_policy,
+        )
+        
         # Model trainer
         self.trainer = Trainer(
             params=params["optimizer"],

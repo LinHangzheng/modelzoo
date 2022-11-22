@@ -12,7 +12,8 @@ class DeConvBlock(BaseLayer):
         The number of classes to predict.
     """
     
-    def __init__(self, output_n, 
+    def __init__(self, 
+                 output_n, 
                  data_format,
                  enable_bias,
                  initializer,
@@ -23,7 +24,7 @@ class DeConvBlock(BaseLayer):
                  tf_summary=False, 
                  **kwargs,
     ):
-        super(ConvBlock,self).__init__(
+        super(DeConvBlock,self).__init__(
             boundary_casting, tf_summary, **kwargs
         )
         self.deconv =  Conv2DTransposeLayer(

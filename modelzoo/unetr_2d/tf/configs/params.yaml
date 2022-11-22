@@ -30,7 +30,8 @@ train_input:
     patch_size: 96
     patch_step: 320
     dataset: "IR_dataset"
-    extract_layers: [3, 6, 9, 12]
+    input_dim: 19
+    
 model:
     classes_num: 10
     hidden_size: 768
@@ -48,6 +49,8 @@ model:
     ret_scores: False
     layer_norm_epsilon: 1.0e-05
     ret_scores: False
+    extract_layers: [0, 3, 6, 9, 12]
+
 
 optimizer:
     optimizer_type: 'adam' # {'sgd', 'momentum', 'adam', 'adamw'}
