@@ -17,7 +17,7 @@ Base class for TensorFlow models.
 """
 from abc import ABC, abstractmethod
 
-from tensorflow.keras.mixed_precision.experimental import Policy
+from tensorflow.keras.experimental import Policy
 
 
 class TFBaseModel(ABC):
