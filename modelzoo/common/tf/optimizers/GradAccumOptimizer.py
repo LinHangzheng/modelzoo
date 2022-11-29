@@ -17,7 +17,7 @@ import re
 import tensorflow as tf
 from tensorflow.python.distribute import reduce_util as ds_reduce_util
 from tensorflow.python.framework import ops
-from tensorflow.python.keras.mixed_precision.loss_scale_optimizer import (
+from tensorflow.python.keras.mixed_precision.experimental.loss_scale_optimizer import (
     LossScaleOptimizer,
 )
 from tensorflow.python.ops import state_ops

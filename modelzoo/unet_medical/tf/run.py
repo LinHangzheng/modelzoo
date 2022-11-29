@@ -33,9 +33,9 @@ from modelzoo.common.tf.run_utils import (
     save_params,
     update_params_from_args,
 )
-from modelzoo.unet.tf.data import eval_input_fn, train_input_fn
-from modelzoo.unet.tf.model import model_fn
-from modelzoo.unet.tf.utils import get_params
+from modelzoo.unet_medical.tf.data import eval_input_fn, train_input_fn
+from modelzoo.unet_medical.tf.model import model_fn
+from modelzoo.unet_medical.tf.utils import get_params
 
 
 def create_arg_parser():
@@ -242,11 +242,6 @@ def main():
     """
     Main function
     """
-    
-    print("Python version")
-    print (sys.version)
-    print("tensorflow version")
-    print(tf. __version__)
     parser = create_arg_parser()
     args = parser.parse_args(sys.argv[1:])
     params = get_params(args.params)

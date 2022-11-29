@@ -12,22 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Params for UNet model on Severstal Steel Defect Detection.
+# Params for UNet model on DAGM2007
 
 train_input:
     shuffle: True
-    shuffle_buffer_size: 1000
-    dataset: "SeverstalDataset"
-    description: "UNet base model params on severstal dataset"
-    dataset_path: "/u/hangzheng/project_bblg/modelzoo/modelzoo/unet/tf/data"
-    train_batch_size: 256
-    eval_batch_size: 32
-    normalize_data_method: "zero_centered"
+    shuffle_buffer_size : 10000
     augment_data: True
-    image_shape: [256, 256, 1]
-    class_id: 3
-    train_test_split: 0.85
-    num_classes: 2
+    dataset_path: 'data' # Place to store data
+    # train_batch_size: 256
+    train_batch_size: 2
+    eval_batch_size: 1024
+    num_parallel_calls: 0   # 0 means AUTOTUNE
+    # num_parallel_reads: 16
+    train_test_split: 0.79
+    num_classes: 6
+    # IR_threshould: 0.075
+    
+    IR_threshould: 0.000001
+    # patch_size: 96
+    patch_size: 32
+    # patch_step: 320
+    patch_step: 5000
+    dataset: "IR_dataset"
+    input_dim: 19
+    normalize_data_method: "zero_centered"
+    only_defective_images: True
+    image_shape: [256, 256, 19]
+    class_id: 1
+    num_classes: 7
 
 model:
     skip_connect: True
@@ -52,19 +64,19 @@ model:
 
 optimizer:
     optimizer_type: "adam"
-    learning_rate: 5.0e-4
+    learning_rate: 1.0e-4
     log_summaries: True
     log_grads: False
     log_hists: False
     loss_scaling_factor: "dynamic"
 
 runconfig:
-    max_steps: 12000
+    max_steps: 6000
     save_summary_steps: 100
     save_checkpoints_steps: 500
     keep_checkpoint_max: 2
     log_step_count_steps: 100
-    model_dir: "model_dir_unet_base_severstal"
+    model_dir: "model_dir_unet_base_dagm"
     cs_ip:
     mode: "train"
 
