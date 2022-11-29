@@ -4,7 +4,7 @@ import h5py
 from copy import *
 import numpy as np
 from patchify import patchify
-import matplotlib.image
+# import matplotlib.image
 
 class IR_dataset:
     def __init__(self, params=None):
@@ -47,7 +47,6 @@ class IR_dataset:
         # matplotlib.image.imsave(f'class.jpeg', Class)
         # matplotlib.image.imsave(f'IR_c1.jpeg', IR[:,:,0])
         # matplotlib.image.imsave(f'IR_c7.jpeg', IR[:,:,6])
-        # pass
     
     def normolize(self, IR):
         negative_idx = np.where(IR<0)
@@ -79,6 +78,12 @@ class IR_dataset:
                         (self.patch_size,self.patch_size),
                         step=self.patch_step)
         Class_ds = Class_ds[patches_idx]
+        Class_ds = Class_ds.reshape((Class_ds.shape[0],-1))
+        if self.mixed_precision:
+                Class_ds = tf.cast(Class_ds, dtype=tf.float16)
+                IR_ds = tf.cast(
+                    IR_ds, dtype=tf.float16
+                )
         return IR_ds, Class_ds
             
     def _augmentation(self,sample, labels):

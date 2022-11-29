@@ -43,9 +43,9 @@ class TFBaseModel(ABC):
 
     def __init__(self, mixed_precision=False):
         self.policy = (
-            Policy("mixed_float16", loss_scale=None)
+            Policy("mixed_float16")
             if mixed_precision
-            else Policy("float32", loss_scale=None)
+            else Policy("float32")
         )
 
     def __call__(self, features, mode):

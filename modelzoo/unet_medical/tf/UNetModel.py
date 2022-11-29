@@ -26,41 +26,29 @@ from modelzoo.common.tf.layers.MaxPool2DLayer import MaxPool2DLayer
 from modelzoo.common.tf.metrics.dice_coefficient import dice_coefficient_metric
 from modelzoo.common.tf.optimizers.Trainer import Trainer
 from modelzoo.common.tf.TFBaseModel import TFBaseModel
-from modelzoo.unet.tf.utils import color_codes
-from layers import TransformerBlock, ConvBlock, DeConvBlock
+from modelzoo.unet_medical.tf.utils import color_codes
 
-class UNetr2DModel(TFBaseModel):
+
+class UNetModel(TFBaseModel):
     """
     UNet model to be used with TF Estimator
     """
 
     def __init__(self, params):
-        super(UNetr2DModel, self).__init__(
+        super(UNetModel, self).__init__(
             mixed_precision=params["model"]["mixed_precision"]
         )
 
         self.num_classes = params["train_input"]["num_classes"]
+        # assert (
+        #     self.num_classes == 2
+        # ), "Currently only binary classification is supported!"
         self.num_output_channels = 1
 
         self.logging_dict = {}
 
-        input_dim = params["train_input"]["input_dim"]
         ### Model params
         mparams = params["model"]
-        hidden_size = mparams['hidden_size']
-        heads_num = mparams['heads_num']
-        mlp_dim = mparams['mlp_dim']
-        encoders_num = mparams['encoders_num']
-        # mlp_head_dim = params['model']['mlp_head_dim']
-        classes_num = mparams['classes_num']
-        dropout_rate = mparams['dropout_rate']
-        tf_summary = mparams["tf_summary"]
-        layer_norm_epsilon = mparams["layer_norm_epsilon"]
-        boundary_casting = mparams["boundary_casting"]
-        ret_scores = mparams['ret_scores']
-        extract_layers = mparams['extract_layers']
-        ##print("TFBaseModel dtype: ", self.policy)
-        
         self.skip_connect = mparams["skip_connect"]
         self.eval_ignore_classes = mparams.get("eval_ignore_classes", [])
 
@@ -74,6 +62,8 @@ class UNetr2DModel(TFBaseModel):
         self.nonlinearity = getattr(tf.keras.layers, self.nonlinearity)(
             **{**self.nonlinearity_params, **dict(dtype=self.policy)},
         )
+        self.encoder_filters = mparams["encoder_filters"]
+        self.decoder_filters = mparams["decoder_filters"]
 
         self.initial_conv_filters = mparams.get("initial_conv_filters")
         self.convs_per_block = mparams.get(
@@ -83,6 +73,9 @@ class UNetr2DModel(TFBaseModel):
         self.eval_metrics = mparams.get(
             "eval_metrics", ["mIOU", "DSC", "MPCA", "Acc"]
         )
+        assert (
+            len(self.encoder_filters) == len(self.decoder_filters) + 1
+        ), "Number of encoder filters should be equal to number of decoder filters + 1 (bottleneck)"
 
         self.initializer = mparams["initializer"]
         self.initializer_params = mparams.get("initializer_params")
@@ -106,127 +99,6 @@ class UNetr2DModel(TFBaseModel):
         self.log_image_summaries = mparams.get("log_image_summaries", False)
         self.mixed_precision = mparams["mixed_precision"]
 
-
-
-        self.transformer = TransformerBlock(
-                classes_num, 
-                hidden_size,
-                dropout_rate,
-                layer_norm_epsilon,
-                encoders_num,
-                heads_num,
-                mlp_dim,
-                ret_scores,
-                extract_layers,
-                boundary_casting,
-                tf_summary
-        )
-        
-        self.decoder0 = tf.keras.Sequential([
-            ConvBlock(                 
-                 32, 
-                 self.data_format,
-                 self.enable_bias,
-                 self.initializer,
-                 self.bias_initializer,
-                 layer_norm_epsilon,
-                 kernel_size=3,
-                 boundary_casting = boundary_casting,
-                 tf_summary=tf_summary, ),
-            ConvBlock(                 
-                 64, 
-                 self.data_format,
-                 self.enable_bias,
-                 self.initializer,
-                 self.bias_initializer,
-                 layer_norm_epsilon,
-                 kernel_size=3,
-                 boundary_casting = boundary_casting,
-                 tf_summary=tf_summary, )
-        ])
-        
-        self.decoder3 = tf.keras.Sequential([
-            DeConvBlock(                 
-                512, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
-            DeConvBlock(                 
-                256, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
-            DeConvBlock(                 
-                128, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
-        ])
-        
-        
-        self.decoder6 = tf.keras.Sequential([
-            DeConvBlock(                 
-                512, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
-            DeConvBlock(                 
-                256, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary)
-        ])
-        
-        self.decoder9 = DeConvBlock(                 
-                512, 
-                self.data_format,
-                self.enable_bias,
-                self.initializer,
-                self.bias_initializer,
-                layer_norm_epsilon,
-                kernel_size=3,
-                boundary_casting = boundary_casting,
-                tf_summary=tf_summary)
-    
-        self.decoder12_upsampler = Conv2DTransposeLayer(
-                filters=output_n,
-                kernel_size=2,
-                strides=2,
-                padding="same",
-                data_format=data_format,
-                use_bias=enable_bias,
-                kernel_initializer=initializer,
-                bias_initializer=bias_initializer,
-                boundary_casting=boundary_casting,
-                tf_summary=tf_summary,
-                dtype=self.dtype_policy,
-        )
-        
         # Model trainer
         self.trainer = Trainer(
             params=params["optimizer"],
@@ -234,167 +106,161 @@ class UNetr2DModel(TFBaseModel):
             mixed_precision=self.mixed_precision,
         )
 
-    # def _unet_block(self, x, block_idx, n_filters, encoder=True):
-    #     with tf.compat.v1.name_scope(f"block{block_idx}"):
-    #         skip_connection = None
-    #         for conv_idx, conv_type in enumerate(self.convs_per_block):
-    #             if conv_type == "3x3_conv":
-    #                 x = Conv2DLayer(
-    #                     filters=n_filters,
-    #                     kernel_size=3,
-    #                     strides=(1, 1),
-    #                     padding="same",
-    #                     name=("enc_" if encoder else "dec_")
-    #                     + f"conv{block_idx}_{conv_idx}",
-    #                     data_format=self.data_format,
-    #                     use_bias=self.enable_bias,
-    #                     kernel_initializer=self.initializer,
-    #                     bias_initializer=self.bias_initializer,
-    #                     boundary_casting=self.boundary_casting,
-    #                     tf_summary=self.tf_summary,
-    #                     dtype=self.policy,
-    #                 )(x)
-    #             elif conv_type == "1x1_conv":
-                    # x = Conv2DLayer(
-                    #     filters=n_filters,
-                    #     kernel_size=1,
-                    #     strides=(1, 1),
-                    #     padding="same",
-                    #     name=("enc_" if encoder else "dec_")
-                    #     + f"1x1_conv{block_idx}_{conv_idx}",
-                    #     data_format=self.data_format,
-                    #     use_bias=self.enable_bias,
-                    #     kernel_initializer=self.initializer,
-                    #     bias_initializer=self.bias_initializer,
-                    #     boundary_casting=self.boundary_casting,
-                    #     tf_summary=self.tf_summary,
-                    #     dtype=self.policy,
-                    # )(x)
-    #             else:
-    #                 raise ValueError(
-    #                     f"Unsupported convolution type: {conv_type}"
-    #                 )
-    #             x = ActivationLayer(
-    #                 self.nonlinearity,
-    #                 boundary_casting=self.boundary_casting,
-    #                 tf_summary=self.tf_summary,
-    #                 dtype=self.policy,
-    #             )(x)
+    def _unet_block(self, x, block_idx, n_filters, encoder=True):
+        with tf.compat.v1.name_scope(f"block{block_idx}"):
+            skip_connection = None
+            for conv_idx, conv_type in enumerate(self.convs_per_block):
+                if conv_type == "3x3_conv":
+                    x = Conv2DLayer(
+                        filters=n_filters,
+                        kernel_size=3,
+                        strides=(1, 1),
+                        padding="same",
+                        name=("enc_" if encoder else "dec_")
+                        + f"conv{block_idx}_{conv_idx}",
+                        data_format=self.data_format,
+                        use_bias=self.enable_bias,
+                        kernel_initializer=self.initializer,
+                        bias_initializer=self.bias_initializer,
+                        boundary_casting=self.boundary_casting,
+                        tf_summary=self.tf_summary,
+                        dtype=self.policy,
+                    )(x)
+                elif conv_type == "1x1_conv":
+                    x = Conv2DLayer(
+                        filters=n_filters,
+                        kernel_size=1,
+                        strides=(1, 1),
+                        padding="same",
+                        name=("enc_" if encoder else "dec_")
+                        + f"1x1_conv{block_idx}_{conv_idx}",
+                        data_format=self.data_format,
+                        use_bias=self.enable_bias,
+                        kernel_initializer=self.initializer,
+                        bias_initializer=self.bias_initializer,
+                        boundary_casting=self.boundary_casting,
+                        tf_summary=self.tf_summary,
+                        dtype=self.policy,
+                    )(x)
+                else:
+                    raise ValueError(
+                        f"Unsupported convolution type: {conv_type}"
+                    )
+                x = ActivationLayer(
+                    self.nonlinearity,
+                    boundary_casting=self.boundary_casting,
+                    tf_summary=self.tf_summary,
+                    dtype=self.policy,
+                )(x)
 
-    #         return x, x
+            return x, x
 
     def build_model(self, features, mode):
+        # Get input image.
         x = features
+
         is_training = mode == tf.estimator.ModeKeys.TRAIN
-        
-        pass
-    
-    # def build_model(self, features, mode):
-        # # Get input image.
-        # x = features
 
-        # is_training = mode == tf.estimator.ModeKeys.TRAIN
+        if self.skip_connect:
+            skip_connections = []
 
-        # if self.skip_connect:
-        #     skip_connections = []
+        if self.initial_conv_filters:
+            x = Conv2DLayer(
+                filters=self.initial_conv_filters,
+                kernel_size=3,
+                activation="relu",
+                padding="same",
+                name="initial_conv",
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
+                boundary_casting=self.boundary_casting,
+                tf_summary=self.tf_summary,
+                dtype=self.policy,
+            )(x)
 
-        # if self.initial_conv_filters:
-        #     x = Conv2DLayer(
-        #         filters=self.initial_conv_filters,
-        #         kernel_size=3,
-        #         activation="relu",
-        #         padding="same",
-        #         name="initial_conv",
-        #         data_format=self.data_format,
-        #         use_bias=self.enable_bias,
-        #         kernel_initializer=self.initializer,
-        #         bias_initializer=self.bias_initializer,
-        #         boundary_casting=self.boundary_casting,
-        #         tf_summary=self.tf_summary,
-        #         dtype=self.policy,
-        #     )(x)
+        ##### Encoder
+        with tf.compat.v1.name_scope("encoder"):
+            for block_idx in range(len(self.encoder_filters) - 1):
+                x, skip_connection = self._unet_block(
+                    x, block_idx, self.encoder_filters[block_idx], encoder=True
+                )
+                if self.skip_connect:
+                    skip_connections.append(skip_connection)
 
-        # ##### Encoder
-        # with tf.compat.v1.name_scope("encoder"):
-        #     for block_idx in range(len(self.encoder_filters) - 1):
-        #         x, skip_connection = self._unet_block(
-        #             x, block_idx, self.encoder_filters[block_idx], encoder=True
-        #         )
-        #         if self.skip_connect:
-        #             skip_connections.append(skip_connection)
+                if self.downscale_method == "max_pool":
+                    x = MaxPool2DLayer(
+                        pool_size=2,
+                        strides=2,
+                        name=f"pool{block_idx}",
+                        data_format=self.data_format,
+                        boundary_casting=self.boundary_casting,
+                        tf_summary=self.tf_summary,
+                        dtype=self.policy,
+                    )(
+                        x
+                    )  # W/(2^(block_idx+1)) x H/(2^(block_idx+1))
 
-        #         if self.downscale_method == "max_pool":
-        #             x = MaxPool2DLayer(
-        #                 pool_size=2,
-        #                 strides=2,
-        #                 name=f"pool{block_idx}",
-        #                 data_format=self.data_format,
-        #                 boundary_casting=self.boundary_casting,
-        #                 tf_summary=self.tf_summary,
-        #                 dtype=self.policy,
-        #             )(
-        #                 x
-        #             )  # W/(2^(block_idx+1)) x H/(2^(block_idx+1))
+        ##### Bottleneck
+        with tf.compat.v1.name_scope("bottleneck"):
+            x, skip_connection = self._unet_block(
+                x,
+                len(self.encoder_filters) - 1,
+                self.encoder_filters[-1],
+                encoder=False,
+            )
 
-        # ##### Bottleneck
-        # with tf.compat.v1.name_scope("bottleneck"):
-        #     x, skip_connection = self._unet_block(
-        #         x,
-        #         len(self.encoder_filters) - 1,
-        #         self.encoder_filters[-1],
-        #         encoder=False,
-        #     )
+        ##### Decoder
+        with tf.compat.v1.name_scope("decoder"):
+            for block_idx in range(len(self.decoder_filters)):
+                with tf.compat.v1.name_scope(f"block{block_idx}"):
+                    x = Conv2DTransposeLayer(
+                        filters=self.decoder_filters[block_idx],
+                        kernel_size=2,
+                        strides=2,
+                        padding="same",
+                        name=f"dec_convt{block_idx}",
+                        data_format=self.data_format,
+                        use_bias=self.enable_bias,
+                        kernel_initializer=self.initializer,
+                        bias_initializer=self.bias_initializer,
+                        boundary_casting=self.boundary_casting,
+                        tf_summary=self.tf_summary,
+                        dtype=self.policy,
+                    )(x)
 
-        # ##### Decoder
-        # with tf.compat.v1.name_scope("decoder"):
-        #     for block_idx in range(len(self.decoder_filters)):
-        #         with tf.compat.v1.name_scope(f"block{block_idx}"):
-                    # x = Conv2DTransposeLayer(
-                    #     filters=self.decoder_filters[block_idx],
-                    #     kernel_size=2,
-                    #     strides=2,
-                    #     padding="same",
-                    #     name=f"dec_convt{block_idx}",
-                    #     data_format=self.data_format,
-                    #     use_bias=self.enable_bias,
-                    #     kernel_initializer=self.initializer,
-                    #     bias_initializer=self.bias_initializer,
-                    #     boundary_casting=self.boundary_casting,
-                    #     tf_summary=self.tf_summary,
-                    #     dtype=self.policy,
-                    # )(x)
+                    if self.skip_connect:
+                        x = concatenate(
+                            [x, skip_connections[-1 - block_idx]],
+                            axis=self.features_axis,
+                            dtype=self.policy,
+                        )
 
-        #             if self.skip_connect:
-        #                 x = concatenate(
-        #                     [x, skip_connections[-1 - block_idx]],
-        #                     axis=self.features_axis,
-        #                     dtype=self.policy,
-        #                 )
+                    x, _ = self._unet_block(
+                        x,
+                        block_idx,
+                        self.decoder_filters[block_idx],
+                        encoder=False,
+                    )
 
-        #             x, _ = self._unet_block(
-        #                 x,
-        #                 block_idx,
-        #                 self.decoder_filters[block_idx],
-        #                 encoder=False,
-        #             )
+        ##### Output
+        logits = Conv2DLayer(
+            filters=self.num_output_channels,
+            kernel_size=1,
+            activation="linear",
+            padding="same",
+            name="output_conv",
+            data_format=self.data_format,
+            use_bias=self.enable_bias,
+            kernel_initializer=self.initializer,
+            bias_initializer=self.bias_initializer,
+            boundary_casting=self.boundary_casting,
+            tf_summary=self.tf_summary,
+            dtype=self.policy,
+        )(x)
 
-        # ##### Output
-        # logits = Conv2DLayer(
-        #     filters=self.num_output_channels,
-        #     kernel_size=1,
-        #     activation="linear",
-        #     padding="same",
-        #     name="output_conv",
-        #     data_format=self.data_format,
-        #     use_bias=self.enable_bias,
-        #     kernel_initializer=self.initializer,
-        #     bias_initializer=self.bias_initializer,
-        #     boundary_casting=self.boundary_casting,
-        #     tf_summary=self.tf_summary,
-        #     dtype=self.policy,
-        # )(x)
-
-        # return logits
+        return logits
 
     def build_total_loss(self, logits, features, labels, mode):
         # Get input image and corresponding gt mask.
@@ -409,13 +275,19 @@ class UNetr2DModel(TFBaseModel):
         )
         reshaped_logits = flatten(logits)
 
-        # Binary Cross-Entropy loss
-        loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+        loss = tf.compat.v1.losses.softmax_cross_entropy(
             reshaped_mask_image,
             reshaped_logits,
             loss_collection=None,
             reduction=Reduction.SUM_OVER_BATCH_SIZE,
         )
+        # Binary Cross-Entropy loss
+        # loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+        #     reshaped_mask_image,
+        #     reshaped_logits,
+        #     loss_collection=None,
+        #     reduction=Reduction.SUM_OVER_BATCH_SIZE,
+        # )
 
         if self.log_image_summaries and is_training:
             self._write_image_summaries(
