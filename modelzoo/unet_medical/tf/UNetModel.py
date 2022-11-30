@@ -43,7 +43,7 @@ class UNetModel(TFBaseModel):
         # assert (
         #     self.num_classes == 2
         # ), "Currently only binary classification is supported!"
-        self.num_output_channels = 1
+        self.num_output_channels = self.num_classes
 
         self.logging_dict = {}
 
@@ -265,16 +265,22 @@ class UNetModel(TFBaseModel):
     def build_total_loss(self, logits, features, labels, mode):
         # Get input image and corresponding gt mask.
         input_image = features
-        reshaped_mask_image = labels
+        
 
         is_training = mode == tf.estimator.ModeKeys.TRAIN
 
         # Flatten the logits
-        flatten = Flatten(
-            dtype="float16" if self.mixed_precision else "float32"
-        )
-        reshaped_logits = flatten(logits)
-
+        # flatten = Flatten(
+        #     dtype="float16" if self.mixed_precision else "float32"
+        # )
+        # reshaped_logits = flatten(logits)
+        # reshaped_logits = tf.reshape(logits, input_image.shape[0:3] + [1])
+        reshaped_logits = tf.transpose(logits,[0,2,3,1])
+        reshaped_logits = tf.reshape(reshaped_logits, [-1,reshaped_logits.shape[-1]])
+        
+        reshaped_mask_image = tf.transpose(labels,[0,2,1])
+        reshaped_mask_image = tf.reshape(reshaped_mask_image, [-1,reshaped_mask_image.shape[-1]])
+        
         loss = tf.compat.v1.losses.softmax_cross_entropy(
             reshaped_mask_image,
             reshaped_logits,
@@ -423,7 +429,7 @@ class UNetModel(TFBaseModel):
             logits, [tf.shape(input=logits)[0], -1, self.num_output_channels],
         )
 
-        if self.num_output_channels == 1:
+        if self.num_output_channels == self.num_classes:
             pred = tf.concat(
                 [tf.ones(pred.shape, dtype=pred.dtype) - pred, pred], axis=-1
             )

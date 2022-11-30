@@ -40,14 +40,14 @@ class IR_dataset:
 
         self.train_ds = tf.data.Dataset.from_tensor_slices((self.train_IR_ds, self.train_Class_ds))
         self.test_ds = tf.data.Dataset.from_tensor_slices((self.test_IR_ds, self.test_Class_ds))
-        matplotlib.image.imsave(f'train.jpeg', self.train_Class)
-        matplotlib.image.imsave(f'test.jpeg', self.test_Class)
-        for i in range(10):
-            matplotlib.image.imsave(f'train_c0_{i}.jpeg', self.train_IR_ds[i,0])
-        matplotlib.image.imsave(f'class.jpeg', Class)
-        matplotlib.image.imsave(f'IR_c1.jpeg', IR[:,:,0])
-        matplotlib.image.imsave(f'IR_c7.jpeg', IR[:,:,6])
-        pass
+        # matplotlib.image.imsave(f'train.jpeg', self.train_Class)
+        # matplotlib.image.imsave(f'test.jpeg', self.test_Class)
+        # for i in range(10):
+        #     matplotlib.image.imsave(f'train_c0_{i}.jpeg', self.train_IR_ds[i,0])
+        # matplotlib.image.imsave(f'class.jpeg', Class)
+        # matplotlib.image.imsave(f'IR_c1.jpeg', IR[:,:,0])
+        # matplotlib.image.imsave(f'IR_c7.jpeg', IR[:,:,6])
+        # pass
     
     def normolize(self, IR):
         negative_idx = np.where(IR<0)

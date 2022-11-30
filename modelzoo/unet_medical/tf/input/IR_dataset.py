@@ -4,7 +4,7 @@ import h5py
 from copy import *
 import numpy as np
 from patchify import patchify
-# import matplotlib.image
+import matplotlib.image
 
 class IR_dataset:
     def __init__(self, params=None):
@@ -42,8 +42,7 @@ class IR_dataset:
         self.test_ds = tf.data.Dataset.from_tensor_slices((self.test_IR_ds, self.test_Class_ds))
         # matplotlib.image.imsave(f'train.jpeg', self.train_Class)
         # matplotlib.image.imsave(f'test.jpeg', self.test_Class)
-        # for i in range(10):
-        #     matplotlib.image.imsave(f'train_c0_{i}.jpeg', self.train_IR_ds[i,0])
+
         # matplotlib.image.imsave(f'class.jpeg', Class)
         # matplotlib.image.imsave(f'IR_c1.jpeg', IR[:,:,0])
         # matplotlib.image.imsave(f'IR_c7.jpeg', IR[:,:,6])
@@ -74,11 +73,17 @@ class IR_dataset:
             IR_ds.append(patches[patches_idx])
         IR_ds = np.stack(IR_ds) #[19,N,H,W]
         IR_ds = np.moveaxis(IR_ds,0,1) #[N,19,H,W]
+        for i in range(10):
+            matplotlib.image.imsave(f'train_c0_{i}.jpeg', np.array(IR_ds[i,0]))
+        IR_ds = tf.convert_to_tensor(IR_ds)
+        
         Class_ds = patchify(Class,
                         (self.patch_size,self.patch_size),
                         step=self.patch_step)
         Class_ds = Class_ds[patches_idx]
         Class_ds = Class_ds.reshape((Class_ds.shape[0],-1))
+        Class_ds = tf.convert_to_tensor(Class_ds, dtype=tf.int32)
+        Class_ds = tf.one_hot(Class_ds,depth=self.num_classes, axis=1)
         if self.mixed_precision:
                 Class_ds = tf.cast(Class_ds, dtype=tf.float16)
                 IR_ds = tf.cast(
