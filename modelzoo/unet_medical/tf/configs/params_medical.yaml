@@ -26,13 +26,13 @@ train_input:
     # num_parallel_reads: 16
     train_test_split: 0.79
     num_classes: 6
-    # IR_threshould: 0.075
+    IR_threshould: 0.075
     
-    IR_threshould: 0.000001
-    # patch_size: 96
-    patch_size: 32
-    # patch_step: 320
-    patch_step: 5000
+    # IR_threshould: 0.000001
+    patch_size: 96
+    # patch_size: 32
+    patch_step: 320
+    # patch_step: 5000
     dataset: "IR_dataset"
     input_dim: 19
     normalize_data_method: "zero_centered"
