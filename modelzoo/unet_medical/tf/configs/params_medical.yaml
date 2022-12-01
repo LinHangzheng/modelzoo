@@ -21,11 +21,11 @@ train_input:
     dataset_path: 'data' # Place to store data
     train_batch_size: 512
     # train_batch_size: 2
-    eval_batch_size: 1024
+    eval_batch_size: 512
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
     train_test_split: 0.79
-    num_classes: 6
+    num_classes: 7
     IR_threshould: 0.075
     
     # IR_threshould: 0.000001
@@ -39,7 +39,6 @@ train_input:
     only_defective_images: True
     image_shape: [256, 256, 19]
     class_id: 1
-    num_classes: 7
 
 model:
     skip_connect: True

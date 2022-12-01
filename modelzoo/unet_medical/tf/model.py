@@ -28,7 +28,7 @@ def model_fn(features, labels, mode, params):
     model = UNetModel(params)
     logits = model(features, mode)
     loss = model.build_total_loss(logits, features, labels, mode)
-
+    
     train_op = None
     host_call = None
     evaluation_hooks = None

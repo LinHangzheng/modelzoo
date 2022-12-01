@@ -278,15 +278,18 @@ class UNetModel(TFBaseModel):
         reshaped_logits = tf.transpose(logits,[0,2,3,1])
         reshaped_logits = tf.reshape(reshaped_logits, [-1,reshaped_logits.shape[-1]])
         
-        reshaped_mask_image = tf.transpose(labels,[0,2,1])
-        reshaped_mask_image = tf.reshape(reshaped_mask_image, [-1,reshaped_mask_image.shape[-1]])
+        reshaped_mask_image = tf.reshape(labels, [-1,labels.shape[-1]])
         
-        loss = tf.compat.v1.losses.softmax_cross_entropy(
-            reshaped_mask_image,
-            reshaped_logits,
-            loss_collection=None,
-            reduction=Reduction.SUM_OVER_BATCH_SIZE,
-        )
+        # loss = tf.compat.v1.losses.softmax_cross_entropy(
+        #     reshaped_mask_image,
+        #     reshaped_logits,
+        #     loss_collection=None,
+        #     reduction=Reduction.SUM_OVER_BATCH_SIZE,
+        # )
+        
+        cce = tf.keras.losses.CategoricalCrossentropy()
+        loss = cce(reshaped_mask_image,reshaped_logits)
+        
         # Binary Cross-Entropy loss
         # loss = tf.compat.v1.losses.sigmoid_cross_entropy(
         #     reshaped_mask_image,
