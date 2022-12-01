@@ -82,11 +82,11 @@ class IR_dataset:
                         step=self.patch_step)
         Class_ds = Class_ds[patches_idx]
         Class_ds = tf.reshape(Class_ds,(Class_ds.shape[0],-1))
-        Class_ds = tf.cast(Class_ds, dtype=tf.int32)
-        Class_ds = tf.one_hot(Class_ds,depth=self.num_classes, axis=1)
-        Class_ds = tf.transpose(Class_ds,[0,2,1])
+        # Class_ds = tf.cast(Class_ds, dtype=tf.int32)
+        # Class_ds = tf.one_hot(Class_ds,depth=self.num_classes, axis=1)
+        # Class_ds = tf.transpose(Class_ds,[0,2,1])
         if self.mixed_precision:
-                Class_ds = tf.cast(Class_ds, dtype=tf.float16)
+                Class_ds = tf.cast(Class_ds, dtype=tf.int32)
                 IR_ds = tf.cast(
                     IR_ds, dtype=tf.float16
                 )

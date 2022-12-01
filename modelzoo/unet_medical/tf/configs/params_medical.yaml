@@ -29,8 +29,8 @@ train_input:
     IR_threshould: 0.075
     
     # IR_threshould: 0.000001
-    patch_size: 96
-    # patch_size: 32
+    # patch_size: 96
+    patch_size: 32
     patch_step: 320
     # patch_step: 5000
     dataset: "IR_dataset"
