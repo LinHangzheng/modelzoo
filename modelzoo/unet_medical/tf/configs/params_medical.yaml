@@ -20,12 +20,11 @@ train_input:
     augment_data: True
     dataset_path: 'data' # Place to store data
     # train_batch_size: 256
-    train_batch_size: 2
-    eval_batch_size: 1024
+    train_batch_size: 32
+    eval_batch_size: 2
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
     train_test_split: 0.79
-    num_classes: 6
     IR_threshould: 0.075
     
     # IR_threshould: 0.000001

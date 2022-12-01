@@ -27,7 +27,7 @@ from modelzoo.common.tf.metrics.dice_coefficient import dice_coefficient_metric
 from modelzoo.common.tf.optimizers.Trainer import Trainer
 from modelzoo.common.tf.TFBaseModel import TFBaseModel
 from modelzoo.unet_medical.tf.utils import color_codes
-
+from modelzoo.common.tf.layers.CrossEntropyFromLogitsLayer import CrossEntropyFromLogitsLayer
 
 class UNetModel(TFBaseModel):
     """
@@ -104,6 +104,12 @@ class UNetModel(TFBaseModel):
             params=params["optimizer"],
             tf_summary=self.tf_summary,
             mixed_precision=self.mixed_precision,
+        )
+        
+        self.cross_entroy_loss_layer = CrossEntropyFromLogitsLayer(
+            boundary_casting=self.boundary_casting,
+            tf_summary=self.tf_summary,
+            dtype=self.policy,
         )
 
     def _unet_block(self, x, block_idx, n_filters, encoder=True):
@@ -275,18 +281,22 @@ class UNetModel(TFBaseModel):
         # )
         # reshaped_logits = flatten(logits)
         # reshaped_logits = tf.reshape(logits, input_image.shape[0:3] + [1])
-        reshaped_logits = tf.transpose(logits,[0,2,3,1])
-        reshaped_logits = tf.reshape(reshaped_logits, [-1,reshaped_logits.shape[-1]])
+        reshaped_logits = tf.transpose(logits,[0,2,3,1])    # 
+        reshaped_logits = tf.reshape(reshaped_logits, [reshaped_logits.shape[0], -1, reshaped_logits.shape[-1]])
         
-        reshaped_mask_image = tf.transpose(labels,[0,2,1])
-        reshaped_mask_image = tf.reshape(reshaped_mask_image, [-1,reshaped_mask_image.shape[-1]])
+        reshaped_mask_image = labels
+        loss = self.cross_entroy_loss_layer(reshaped_mask_image,reshaped_logits)
+        loss = tf.reduce_mean(input_tensor=loss)
+        # reshaped_mask_image = tf.reshape(labels, [-1,labels.shape[-1]])
         
-        loss = tf.compat.v1.losses.softmax_cross_entropy(
-            reshaped_mask_image,
-            reshaped_logits,
-            loss_collection=None,
-            reduction=Reduction.SUM_OVER_BATCH_SIZE,
-        )
+        # cce = tf.keras.losses.CategoricalCrossentropy()
+        # loss = cce(reshaped_mask_image,reshaped_logits)
+        # loss = tf.compat.v1.losses.softmax_cross_entropy(
+            # reshaped_mask_image,
+            # reshaped_logits,
+            # loss_collection=None,
+            # reduction=Reduction.SUM_OVER_BATCH_SIZE,
+        # )
         # Binary Cross-Entropy loss
         # loss = tf.compat.v1.losses.sigmoid_cross_entropy(
         #     reshaped_mask_image,
