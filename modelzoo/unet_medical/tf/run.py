@@ -35,8 +35,10 @@ from modelzoo.common.tf.run_utils import (
 )
 from modelzoo.unet_medical.tf.data import eval_input_fn, train_input_fn
 from modelzoo.unet_medical.tf.model import model_fn
-from modelzoo.unet_medical.tf.utils import get_params
-
+from modelzoo.unet_medical.tf.utils import (
+    get_params,
+    get_custom_stack_params
+)
 
 def create_arg_parser():
     """
@@ -174,11 +176,14 @@ def run(
     params["use_cs"] = use_cs
     csrunconfig_dict = get_csrunconfig_dict(runconfig_params)
 
+    stack_params = get_custom_stack_params(params)
+    
     # prep cs1 run environment, run config and estimator
     check_env(runconfig_params)
     est_config = CSRunConfig(
         cs_ip=runconfig_params["cs_ip"],
         cs_config=cs_config,
+        stack_params=stack_params,
         **csrunconfig_dict,
     )
 
