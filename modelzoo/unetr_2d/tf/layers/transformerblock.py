@@ -33,7 +33,7 @@ class TransformerBlock(BaseLayer):
                                            dropout_rate=dropout_rate, 
                                            boundary_casting=boundary_casting,
                                            tf_summary=tf_summary,
-                                           dtype=self.policy)
+                                           dtype=self.dtype_policy)
     
         self.encoder_norm =  LayerNormalizationLayer(dtype=self.dtype_policy,
                             epsilon=layer_norm_epsilon,
@@ -45,7 +45,7 @@ class TransformerBlock(BaseLayer):
                                mlp_dim, 
                                dropout_rate, 
                                layer_norm_epsilon, 
-                               dtype=self.policy, 
+                               dtype=self.dtype_policy, 
                                boundary_casting=boundary_casting,
                                tf_summary=tf_summary)
             for _ in range(encoders_num)
@@ -57,7 +57,6 @@ class TransformerBlock(BaseLayer):
         layer_out = []
         x = self.emb_patches(input)
         for depth, encoder in enumerate(self.encoders):
-            x, _ = encoder(x)
             x = encoder(x, self.ret_scores)
             if self.ret_scores:
                 x, scores = x

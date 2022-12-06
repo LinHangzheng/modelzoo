@@ -12,35 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-File containing the model function and parameterizations for the
-UNet Semantic Segmentation model.
-"""
 import argparse
 import os
+from pyexpat import model
 import sys
 
 import tensorflow as tf
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
-from modelzoo.common.tf.estimator.cs_estimator import CerebrasEstimator
-from modelzoo.common.tf.estimator.run_config import CSRunConfig
+from modelzoo.unetr_2d.tf.data import (
+    eval_input_fn,
+    train_input_fn,
+)
+from modelzoo.unetr_2d.tf.model import model_fn
+from modelzoo.unetr_2d.tf.utils import (
+    get_custom_stack_params,
+    get_params,
+)
+from modelzoo.common.tf.estimator.cs_estimator import (
+    CerebrasEstimator,
+)
+from modelzoo.common.tf.estimator.run_config import (
+    CSRunConfig,
+)
 from modelzoo.common.tf.run_utils import (
     check_env,
+    create_warm_start_settings,
     get_csconfig,
     get_csrunconfig_dict,
     is_cs,
     save_params,
+    save_predictions,
     update_params_from_args,
 )
-from modelzoo.unetr_2d.tf.data import eval_input_fn, train_input_fn
-from modelzoo.unetr_2d.tf.model import model_fn
-from modelzoo.unetr_2d.tf.utils import get_params
+
+CS1_MODES = ["train", "eval"]
 
 
-def create_arg_parser():
+def create_arg_parser(default_model_dir, include_multireplica=False):
     """
     Create parser for command line args.
+
+    :param str default_model_dir: default value for the model_dir
     :returns: ArgumentParser
     """
     parser = argparse.ArgumentParser()
@@ -53,6 +66,7 @@ def create_arg_parser():
     parser.add_argument(
         "-o",
         "--model_dir",
+        default=default_model_dir,
         help="Model directory where checkpoints will be written. "
         + "If directory exists, weights are loaded from the checkpoint file.",
     )
@@ -94,10 +108,10 @@ def create_arg_parser():
         "-m",
         "--mode",
         required=True,
-        choices=["train", "eval", "eval_all", "train_and_eval"],
+        choices=["train", "eval", "eval_all", "train_and_eval", "predict",],
         help=(
-            "Can train, eval, eval_all, or train_and_eval."
-            + "  Train and eval will compile and train if on the Cerebras System,"
+            "Can train, eval, eval_all, train_and_eval, or predict."
+            + "  Train, eval, and predict will compile and train if on the Cerebras System,"
             + "  and just run locally (CPU/GPU) if not on the Cerebras System."
             + "  train_and_eval will run locally."
             + "  Eval_all will run eval locally for all available checkpoints."
@@ -123,16 +137,34 @@ def create_arg_parser():
         default=None,
         help="Checkpoint to initialize weights from.",
     )
+    if include_multireplica:
+        parser.add_argument(
+            "--multireplica",
+            action="store_true",
+            help="run multiple copies of the model data-parallel"
+            + " on the wafer at the same time.",
+        )
 
     return parser
 
 
-def validate_params(params):
+def validate_params(params, cs1_modes):
     # check validate_only/compile_only
     runconfig_params = params["runconfig"]
     assert not (
         runconfig_params["validate_only"] and runconfig_params["compile_only"]
     ), "Please only use one of validate_only and compile_only."
+
+    # check for gpu optimization flags
+    if (
+        runconfig_params["mode"] not in ["compile_only", "validate_only"]
+        and not is_cs(runconfig_params)
+        and not params["model"]["enable_gpu_optimizations"]
+    ):
+        tf.compat.v1.logging.warn(
+            "Set enable_gpu_optimizations to True in model params "
+            "to improve GPU performance."
+        )
 
     # ensure runconfig is compatible with the Cerebras System
     if (
@@ -140,13 +172,29 @@ def validate_params(params):
         or runconfig_params["validate_only"]
         or runconfig_params["compile_only"]
     ):
-        assert (
-            runconfig_params["mode"] == "train"
-        ), "For UNET model, only training is supported on the Cerebras System."
+        assert runconfig_params["mode"] in cs1_modes, (
+            "To run this model on the Cerebras System, please use one of the following modes: "
+            ", ".join(cs1_modes)
+        )
+        assert not (
+            runconfig_params.get("multireplica")
+            and runconfig_params["mode"] != "train"
+        ), "--multireplica can only be used in train mode."
+    else:
+        assert not runconfig_params.get(
+            "multireplica"
+        ), "--multireplica can only be used on the Cerebras System!"
 
 
 def run(
-    args, params, model_fn, train_input_fn=None, eval_input_fn=None,
+    args,
+    params,
+    model_fn,
+    train_input_fn=None,
+    eval_input_fn=None,
+    predict_input_fn=None,
+    output_layer_name=None,
+    cs1_modes=CS1_MODES,
 ):
     """
     Set up estimator and run based on mode
@@ -155,39 +203,42 @@ def run(
     :params tf.estimator.EstimatorSpec model_fn: Model function to run with
     :params tf.data.Dataset train_input_fn: Dataset to train with
     :params tf.data.Dataset eval_input_fn: Dataset to validate against
+    :params tf.data.Dataset predict_input_fn: Dataset to run inference on
+    :params str output_layer_name: name of the output layer to be excluded
+        from weight initialization when performing fine-tuning.
     """
-    # update runtime params
+    # update and validate runtime params
     runconfig_params = params["runconfig"]
     update_params_from_args(args, runconfig_params)
-    validate_params(params)
-
+    validate_params(params, cs1_modes)
     # save params for reproducibility
     save_params(params, model_dir=runconfig_params["model_dir"])
 
-    tf.random.set_seed(runconfig_params["tf_random_seed"])
-
-    # get cs- specific configurations
+    # get cs-specific configs
     cs_config = get_csconfig(params.get("csconfig", dict()))
-
     # get runtime configurations
     use_cs = is_cs(runconfig_params)
-    params["use_cs"] = use_cs
     csrunconfig_dict = get_csrunconfig_dict(runconfig_params)
+    stack_params = get_custom_stack_params(params)
 
     # prep cs1 run environment, run config and estimator
     check_env(runconfig_params)
     est_config = CSRunConfig(
         cs_ip=runconfig_params["cs_ip"],
         cs_config=cs_config,
+        stack_params=stack_params,
         **csrunconfig_dict,
     )
-
+    warm_start_settings = create_warm_start_settings(
+        runconfig_params, exclude_string=output_layer_name
+    )
+    
     est = CerebrasEstimator(
         model_fn=model_fn,
         model_dir=runconfig_params["model_dir"],
         config=est_config,
         params=params,
-        warm_start_from=runconfig_params["checkpoint_path"],
+        warm_start_from=warm_start_settings,
     )
 
     # execute based on mode
@@ -195,9 +246,12 @@ def run(
         if runconfig_params["mode"] == "train":
             input_fn = train_input_fn
             mode = tf.estimator.ModeKeys.TRAIN
-        else:
+        elif runconfig_params["mode"] == "eval":
             input_fn = eval_input_fn
             mode = tf.estimator.ModeKeys.EVAL
+        else:
+            input_fn = predict_input_fn
+            mode = tf.estimator.ModeKeys.PREDICT
         est.compile(
             input_fn, validate_only=runconfig_params["validate_only"], mode=mode
         )
@@ -236,15 +290,32 @@ def run(
             throttle_secs=runconfig_params["throttle_secs"],
         )
         tf.estimator.train_and_evaluate(est, train_spec, eval_spec)
+    elif runconfig_params["mode"] == "predict":
+        sys_name = "cs" if use_cs else "tf"
+        file_to_save = f"predictions_{sys_name}_{est_config.task_id}.npz"
+        predictions = est.predict(
+            input_fn=predict_input_fn,
+            checkpoint_path=runconfig_params["checkpoint_path"],
+            num_samples=runconfig_params["predict_steps"],
+            use_cs=use_cs,
+        )
+        save_predictions(
+            model_dir=runconfig_params["model_dir"],
+            outputs=predictions,
+            name=file_to_save,
+        )
 
 
 def main():
     """
     Main function
     """
-    parser = create_arg_parser()
+    default_model_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "model_dir"
+    )
+    parser = create_arg_parser(default_model_dir, include_multireplica=True)
     args = parser.parse_args(sys.argv[1:])
-    params = get_params(args.params)
+    params = get_params(args.params, mode=args.mode)
     run(
         args=args,
         params=params,

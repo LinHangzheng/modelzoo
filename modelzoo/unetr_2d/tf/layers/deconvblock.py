@@ -45,7 +45,7 @@ class DeConvBlock(BaseLayer):
                         filters=output_n,
                         kernel_size=kernel_size,
                         strides=(1, 1),
-                        padding=((kernel_size - 1) // 2),
+                        padding="same",
                         data_format=data_format,
                         use_bias=enable_bias,
                         kernel_initializer=initializer,
@@ -65,5 +65,5 @@ class DeConvBlock(BaseLayer):
         x = self.deconv(input)
         x = self.conv(x)
         x = self.norm(x)
-        x = ActivationLayer.relu6(x)
+        x = ActivationLayer.gelu(x)
         return x

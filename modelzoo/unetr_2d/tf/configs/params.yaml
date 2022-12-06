@@ -25,12 +25,13 @@ train_input:
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
     train_test_split: 0.79
-    num_classes: 6
+    num_classes: 7
     IR_threshould: 0.075
     patch_size: 96
     patch_step: 320
+    vit_patch_size: 16
     dataset: "IR_dataset"
-    input_dim: 19
+    IR_channel_level: 5 # up to 19 
     
 model:
     classes_num: 10
@@ -50,6 +51,8 @@ model:
     layer_norm_epsilon: 1.0e-05
     ret_scores: False
     extract_layers: [0, 3, 6, 9, 12]
+    initializer: "glorot_uniform"
+    bias_initializer: "zeros"
 
 
 optimizer:

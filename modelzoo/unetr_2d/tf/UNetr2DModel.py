@@ -28,6 +28,7 @@ from modelzoo.common.tf.optimizers.Trainer import Trainer
 from modelzoo.common.tf.TFBaseModel import TFBaseModel
 from modelzoo.unet.tf.utils import color_codes
 from layers import TransformerBlock, ConvBlock, DeConvBlock
+from modelzoo.common.tf.layers.CrossEntropyFromLogitsLayer import CrossEntropyFromLogitsLayer
 
 class UNetr2DModel(TFBaseModel):
     """
@@ -43,11 +44,14 @@ class UNetr2DModel(TFBaseModel):
         self.num_output_channels = 1
 
         self.logging_dict = {}
-
-        input_dim = params["train_input"]["input_dim"]
+        
+        IR_channel_level = params["train_input"]["IR_channel_level"]
+        patch_size = params["train_input"]["patch_size"]
+        vit_patch_size = params["train_input"]["vit_patch_size"]
+        self.patch_dim = int(patch_size/vit_patch_size)
         ### Model params
         mparams = params["model"]
-        hidden_size = mparams['hidden_size']
+        self.hidden_size = mparams['hidden_size']
         heads_num = mparams['heads_num']
         mlp_dim = mparams['mlp_dim']
         encoders_num = mparams['encoders_num']
@@ -61,7 +65,7 @@ class UNetr2DModel(TFBaseModel):
         extract_layers = mparams['extract_layers']
         ##print("TFBaseModel dtype: ", self.policy)
         
-        self.skip_connect = mparams["skip_connect"]
+        # self.skip_connect = mparams["skip_connect"]
         self.eval_ignore_classes = mparams.get("eval_ignore_classes", [])
 
         self.data_format = mparams["data_format"]
@@ -69,11 +73,11 @@ class UNetr2DModel(TFBaseModel):
         self.downscale_method = mparams.get("downscale_method", "max_pool")
 
         self.enable_bias = mparams["enable_bias"]
-        self.nonlinearity = mparams["nonlinearity"]
-        self.nonlinearity_params = mparams.get("nonlinearity_params", dict())
-        self.nonlinearity = getattr(tf.keras.layers, self.nonlinearity)(
-            **{**self.nonlinearity_params, **dict(dtype=self.policy)},
-        )
+        # self.nonlinearity = mparams["nonlinearity"]
+        # self.nonlinearity_params = mparams.get("nonlinearity_params", dict())
+        # self.nonlinearity = getattr(tf.keras.layers, self.nonlinearity)(
+        #     **{**self.nonlinearity_params, **dict(dtype=self.policy)},
+        # )
 
         self.initial_conv_filters = mparams.get("initial_conv_filters")
         self.convs_per_block = mparams.get(
@@ -107,10 +111,15 @@ class UNetr2DModel(TFBaseModel):
         self.mixed_precision = mparams["mixed_precision"]
 
 
-
+        self.cross_entroy_loss_layer = CrossEntropyFromLogitsLayer(
+            boundary_casting=self.boundary_casting,
+            tf_summary=self.tf_summary,
+            dtype=self.policy,
+        )
+        
         self.transformer = TransformerBlock(
                 classes_num, 
-                hidden_size,
+                self.hidden_size,
                 dropout_rate,
                 layer_norm_epsilon,
                 encoders_num,
@@ -119,7 +128,8 @@ class UNetr2DModel(TFBaseModel):
                 ret_scores,
                 extract_layers,
                 boundary_casting,
-                tf_summary
+                tf_summary,
+                dtype=self.policy
         )
         
         self.decoder0 = tf.keras.Sequential([
@@ -132,7 +142,8 @@ class UNetr2DModel(TFBaseModel):
                  layer_norm_epsilon,
                  kernel_size=3,
                  boundary_casting = boundary_casting,
-                 tf_summary=tf_summary, ),
+                 tf_summary=tf_summary, 
+                 dtype=self.policy),
             ConvBlock(                 
                  64, 
                  self.data_format,
@@ -142,7 +153,8 @@ class UNetr2DModel(TFBaseModel):
                  layer_norm_epsilon,
                  kernel_size=3,
                  boundary_casting = boundary_casting,
-                 tf_summary=tf_summary, )
+                 tf_summary=tf_summary, 
+                 dtype=self.policy)
         ])
         
         self.decoder3 = tf.keras.Sequential([
@@ -155,7 +167,8 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
+                tf_summary=tf_summary,
+                dtype=self.policy),
             DeConvBlock(                 
                 256, 
                 self.data_format,
@@ -165,7 +178,8 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
+                tf_summary=tf_summary,
+                dtype=self.policy),
             DeConvBlock(                 
                 128, 
                 self.data_format,
@@ -175,7 +189,8 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
+                tf_summary=tf_summary,
+                dtype=self.policy),
         ])
         
         
@@ -189,7 +204,8 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary),
+                tf_summary=tf_summary,
+                dtype=self.policy),
             DeConvBlock(                 
                 256, 
                 self.data_format,
@@ -199,7 +215,8 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary)
+                tf_summary=tf_summary,
+                dtype=self.policy)
         ])
         
         self.decoder9 = DeConvBlock(                 
@@ -211,22 +228,185 @@ class UNetr2DModel(TFBaseModel):
                 layer_norm_epsilon,
                 kernel_size=3,
                 boundary_casting = boundary_casting,
-                tf_summary=tf_summary)
+                tf_summary=tf_summary,
+                dtype=self.policy)
     
         self.decoder12_upsampler = Conv2DTransposeLayer(
-                filters=output_n,
+                filters=512,
                 kernel_size=2,
                 strides=2,
                 padding="same",
-                data_format=data_format,
-                use_bias=enable_bias,
-                kernel_initializer=initializer,
-                bias_initializer=bias_initializer,
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
                 boundary_casting=boundary_casting,
                 tf_summary=tf_summary,
-                dtype=self.dtype_policy,
+                dtype=self.policy,
         )
         
+        self.decoder9_upsampler = tf.keras.Sequential([
+            ConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            ConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            ConvBlock(                 
+                512, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary,
+                dtype=self.policy),
+            Conv2DTransposeLayer(
+                filters=256,
+                kernel_size=2,
+                strides=2,
+                padding="same",
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
+                boundary_casting=boundary_casting,
+                tf_summary=tf_summary,
+                dtype=self.policy,)
+        ])
+        
+        self.decoder6_upsampler = tf.keras.Sequential([
+            ConvBlock(                 
+                256, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            ConvBlock(                 
+                256, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            Conv2DTransposeLayer(
+                filters=128,
+                kernel_size=2,
+                strides=2,
+                padding="same",
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
+                boundary_casting=boundary_casting,
+                tf_summary=tf_summary,
+                dtype=self.policy,)
+        ])
+        
+        
+        self.decoder3_upsampler = tf.keras.Sequential([
+            ConvBlock(                 
+                128, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            ConvBlock(                 
+                128, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            Conv2DTransposeLayer(
+                filters=64,
+                kernel_size=2,
+                strides=2,
+                padding="same",
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
+                boundary_casting=boundary_casting,
+                tf_summary=tf_summary,
+                dtype=self.policy,)
+        ])
+        
+        self.decoder0_header = tf.keras.Sequential([
+            ConvBlock(                 
+                64, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            ConvBlock(                 
+                64, 
+                self.data_format,
+                self.enable_bias,
+                self.initializer,
+                self.bias_initializer,
+                layer_norm_epsilon,
+                kernel_size=3,
+                boundary_casting = boundary_casting,
+                tf_summary=tf_summary, 
+                dtype=self.policy),
+            Conv2DLayer(
+                filters=self.num_classes,
+                kernel_size=1,
+                strides=(1, 1),
+                padding="same",
+                # name=("enc_" if encoder else "dec_")
+                # + f"conv{block_idx}_{conv_idx}",
+                data_format=self.data_format,
+                use_bias=self.enable_bias,
+                kernel_initializer=self.initializer,
+                bias_initializer=self.bias_initializer,
+                boundary_casting=self.boundary_casting,
+                tf_summary=self.tf_summary,
+                dtype=self.policy,
+            )
+        ])
         # Model trainer
         self.trainer = Trainer(
             params=params["optimizer"],
@@ -239,21 +419,21 @@ class UNetr2DModel(TFBaseModel):
     #         skip_connection = None
     #         for conv_idx, conv_type in enumerate(self.convs_per_block):
     #             if conv_type == "3x3_conv":
-    #                 x = Conv2DLayer(
-    #                     filters=n_filters,
-    #                     kernel_size=3,
-    #                     strides=(1, 1),
-    #                     padding="same",
-    #                     name=("enc_" if encoder else "dec_")
-    #                     + f"conv{block_idx}_{conv_idx}",
-    #                     data_format=self.data_format,
-    #                     use_bias=self.enable_bias,
-    #                     kernel_initializer=self.initializer,
-    #                     bias_initializer=self.bias_initializer,
-    #                     boundary_casting=self.boundary_casting,
-    #                     tf_summary=self.tf_summary,
-    #                     dtype=self.policy,
-    #                 )(x)
+                    # x = Conv2DLayer(
+                    #     filters=n_filters,
+                    #     kernel_size=3,
+                    #     strides=(1, 1),
+                    #     padding="same",
+                    #     name=("enc_" if encoder else "dec_")
+                    #     + f"conv{block_idx}_{conv_idx}",
+                    #     data_format=self.data_format,
+                    #     use_bias=self.enable_bias,
+                    #     kernel_initializer=self.initializer,
+                    #     bias_initializer=self.bias_initializer,
+                    #     boundary_casting=self.boundary_casting,
+                    #     tf_summary=self.tf_summary,
+                    #     dtype=self.policy,
+                    # )(x)
     #             elif conv_type == "1x1_conv":
                     # x = Conv2DLayer(
                     #     filters=n_filters,
@@ -284,9 +464,29 @@ class UNetr2DModel(TFBaseModel):
     #         return x, x
 
     def build_model(self, features, mode):
-        x = features
+        image, x = features[0],features[1]
+        batch = x.shape[0]
+        
         is_training = mode == tf.estimator.ModeKeys.TRAIN
         
+        z = self.transformer(x)
+        z0, z3, z6, z9, z12 = image, *z
+        # [B, embding, vit_patch_size^2]  
+        z3 = tf.reshape(tf.transpose(z3, [0,2,1]), [batch,self.hidden_size,self.patch_dim,self.patch_dim])   
+        z6 = tf.reshape(tf.transpose(z6, [0,2,1]), [batch,self.hidden_size,self.patch_dim,self.patch_dim])   
+        z9 = tf.reshape(tf.transpose(z9, [0,2,1]), [batch,self.hidden_size,self.patch_dim,self.patch_dim])   
+        z12 = tf.reshape(tf.transpose(z12, [0,2,1]), [batch,self.hidden_size,self.patch_dim,self.patch_dim])
+        
+        z12 = self.decoder12_upsampler(z12)
+        z9 = self.decoder9(z9)
+        z9 = self.decoder9_upsampler(tf.concat([z9, z12], axis=1))
+        z6 = self.decoder6(z6)
+        z6 = self.decoder6_upsampler(tf.concat([z6, z9], axis=1))
+        z3 = self.decoder3(z3)
+        z3 = self.decoder3_upsampler(tf.concat([z3, z6], axis=1))
+        z0 = self.decoder0(z0)
+        output = self.decoder0_header(tf.concat([z0, z3], axis=1))
+        return output   
         pass
     
     # def build_model(self, features, mode):
@@ -398,24 +598,21 @@ class UNetr2DModel(TFBaseModel):
 
     def build_total_loss(self, logits, features, labels, mode):
         # Get input image and corresponding gt mask.
-        input_image = features
+        input_image = features[0]
         reshaped_mask_image = labels
 
         is_training = mode == tf.estimator.ModeKeys.TRAIN
 
-        # Flatten the logits
-        flatten = Flatten(
-            dtype="float16" if self.mixed_precision else "float32"
-        )
-        reshaped_logits = flatten(logits)
-
-        # Binary Cross-Entropy loss
-        loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            reshaped_mask_image,
-            reshaped_logits,
-            loss_collection=None,
-            reduction=Reduction.SUM_OVER_BATCH_SIZE,
-        )
+        # # Flatten the logits
+        # flatten = Flatten(
+        #     dtype="float16" if self.mixed_precision else "float32"
+        # )
+        # reshaped_logits = flatten(logits)
+        reshaped_logits = tf.transpose(logits,[0,2,3,1])    # 
+        reshaped_logits = tf.reshape(reshaped_logits, [reshaped_logits.shape[0], -1, reshaped_logits.shape[-1]])
+        
+        loss = self.cross_entroy_loss_layer(reshaped_mask_image,reshaped_logits)
+        loss = tf.reduce_mean(input_tensor=loss)
 
         if self.log_image_summaries and is_training:
             self._write_image_summaries(

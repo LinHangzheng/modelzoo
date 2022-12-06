@@ -52,7 +52,7 @@ class EmbeddedPatches(BaseLayer):
         (B, N, C) = input_shape
         self.pos_emb = tf.cast(self.add_weight(         # [1, 50, 32]
             name="pos_emb",
-            shape=(N + 1, self.latent_dim),
+            shape=(1, N, self.latent_dim),
             # initializer=RandomNormal(stddev=0.02), # FROM BERT
             initializer="zeros", # FROM BERT
             dtype=self.variable_dtype
@@ -65,11 +65,11 @@ class EmbeddedPatches(BaseLayer):
         patches = self.projection(input) # [256, 49, 32]
         
         # add embedding
-        bc_class_emb = tf.tile(self.class_emb, [batch_size,1,1])          # [256, 1, 32]
-        patches = tf.concat([bc_class_emb, patches], axis=1)              # [256, 50, 32] 
+        # bc_class_emb = tf.tile(self.class_emb, [batch_size,1,1])          # [256, 1, 32]
+        # patches = tf.concat([bc_class_emb, patches], axis=1)              # [256, 50, 32] 
 
         # add position embeddings
-        patches = patches + self.pos_emb  # [256, 50, 32] <- [256, 50, 32] + [50, 32]
+        patches = patches + self.pos_emb  # [256, 50, 32] <- [256, 50, 32] + [1, 50, 32]
         
         # dropout
         patches = self.dropout(patches) # [256, 50, 32]
