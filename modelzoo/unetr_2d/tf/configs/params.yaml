@@ -20,18 +20,18 @@ train_input:
     shuffle_buffer_size : 10000
     augment_data: True
     dataset_path: 'data' # Place to store data
-    train_batch_size: 256
+    train_batch_size: 2
     eval_batch_size: 1024
     num_parallel_calls: 0   # 0 means AUTOTUNE
     # num_parallel_reads: 16
     train_test_split: 0.79
     num_classes: 7
     IR_threshould: 0.075
-    patch_size: 96
+    patch_size: 32
     patch_step: 320
     vit_patch_size: 16
     dataset: "IR_dataset"
-    IR_channel_level: 5 # up to 19 
+    IR_channel_level: 2 # up to 19 
     
 model:
     classes_num: 10
