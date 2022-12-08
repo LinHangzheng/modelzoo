@@ -11,7 +11,6 @@ class TransformerBlock(BaseLayer):
     """
     
     def __init__(self, 
-                 classes_num, 
                  hidden_size,
                  dropout_rate,
                  layer_norm_epsilon,
@@ -27,6 +26,9 @@ class TransformerBlock(BaseLayer):
         super(TransformerBlock,self).__init__(
             boundary_casting, tf_summary, **kwargs
         )
+        self.boundary_casting = boundary_casting
+        self.tf_summary = tf_summary
+        self.hidden_size = hidden_size
         self.ret_scores = ret_scores
         self.extract_layers = extract_layers
         self.emb_patches = EmbeddedPatches(latent_dim=hidden_size, 
@@ -50,8 +52,7 @@ class TransformerBlock(BaseLayer):
                                tf_summary=tf_summary)
             for _ in range(encoders_num)
         ]
-            
-    
+        
     
     def call(self, input):
         layer_out = []

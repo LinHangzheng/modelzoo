@@ -30,7 +30,7 @@ class DeConvBlock(BaseLayer):
         self.deconv =  Conv2DTransposeLayer(
                         filters=output_n,
                         kernel_size=2,
-                        strides=2,
+                        strides=(2,2),
                         padding="same",
                         data_format=data_format,
                         use_bias=enable_bias,
