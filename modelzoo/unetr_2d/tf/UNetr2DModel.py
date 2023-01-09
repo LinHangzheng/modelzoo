@@ -16,6 +16,9 @@
 UNet model to be used with TF Estimator
 """
 import tensorflow as tf
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
 from tensorflow.compat.v1.losses import Reduction
 from tensorflow.python.keras.layers import Flatten, concatenate
 

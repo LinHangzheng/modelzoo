@@ -18,6 +18,9 @@ from pyexpat import model
 import sys
 
 import tensorflow as tf
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
 from modelzoo.unetr_2d.tf.data import (
