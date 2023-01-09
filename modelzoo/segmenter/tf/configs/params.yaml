@@ -27,7 +27,7 @@ train_input:
     train_test_split: 0.79
     num_classes: 7
     IR_threshould: 0.075
-    patch_size: 32
+    image_size: 32
     patch_step: 320
     vit_patch_size: 16
     dataset: "IR_dataset"
@@ -37,8 +37,9 @@ model:
     classes_num: 7
     hidden_size: 768
     heads_num: 12
-    mlp_dim: 3072
-    encoders_num: 36
+    mlp_dim: 1024
+    encoders_num: 12
+    decoders_num: 2
     dropout_rate: 0.1
     warmup_steps: 0
     decay_type: "linear"

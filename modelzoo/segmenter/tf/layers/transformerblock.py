@@ -55,12 +55,9 @@ class TransformerBlock(BaseLayer):
         
     
     def call(self, input):
-        layer_out = []
         x = self.emb_patches(input)
         for depth, encoder in enumerate(self.encoders):
-            x = encoder(x, self.ret_scores)
+            x = encoder(x, mask=None, ret_scores=self.ret_scores)
             if self.ret_scores:
                 x, scores = x
-            if depth + 1  in self.extract_layers:
-                layer_out.append(x)
-        return layer_out
+        return x

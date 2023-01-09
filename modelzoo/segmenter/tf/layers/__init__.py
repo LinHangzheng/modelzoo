@@ -5,3 +5,5 @@ from .transformerblock import TransformerBlock
 from .convblock import ConvBlock
 from .deconvblock import DeConvBlock
 from .permute import PermuteLayer
+from .decoder import MaskTransformer
+from .UpSampling2DLayer import UpSampling2DLayer
