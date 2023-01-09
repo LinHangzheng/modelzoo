@@ -37,13 +37,13 @@ class IR_dataset:
         self.test_Class = None 
         self.data_split(IR,Class,self.train_test_split)
         
-        self.train_IR_patches_ds, self.train_IR_ds, self.train_Class_ds = self.prepare_data(self.train_IR, self.train_Class)
-        self.test_IR_patches_ds, self.test_IR_ds, self.test_Class_ds = self.prepare_data(self.test_IR, self.test_Class)
+        self.train_IR_patches_ds,  self.train_Class_ds = self.prepare_data(self.train_IR, self.train_Class)
+        self.test_IR_patches_ds, self.test_Class_ds = self.prepare_data(self.test_IR, self.test_Class)
 
         self.train_ds = tf.data.Dataset.from_tensor_slices((
-            (self.train_IR_ds,self.train_IR_patches_ds), self.train_Class_ds))
+            self.train_IR_patches_ds, self.train_Class_ds))
         self.test_ds = tf.data.Dataset.from_tensor_slices((
-            (self.test_IR_ds, self.test_IR_patches_ds), self.test_Class_ds))
+            self.test_IR_patches_ds, self.test_Class_ds))
         # matplotlib.image.imsave(f'train.jpeg', self.train_Class)
         # matplotlib.image.imsave(f'test.jpeg', self.test_Class)
 
@@ -105,7 +105,7 @@ class IR_dataset:
                 IR_ds = tf.cast(
                     IR_ds, dtype=tf.float16
                 )
-        return IR_patches_ds, IR_ds, Class_ds
+        return IR_patches_ds,  Class_ds
             
     def _augmentation(self,sample, labels):
         # TODO: use affine transformation for data augmentation
