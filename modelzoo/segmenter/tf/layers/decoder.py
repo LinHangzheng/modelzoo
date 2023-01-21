@@ -121,7 +121,10 @@ class MaskTransformer(BaseLayer):
         patches = patches / tf.norm(patches,axis=-1, keepdims=True)
         cls_seg_feat = cls_seg_feat / tf.norm(cls_seg_feat,axis=-1, keepdims=True) 
         
-        masks = tf.matmul(patches, cls_seg_feat, transpose_b=True)
+        cls_seg_feat = tf.transpose(cls_seg_feat, perm=[0,2,1])
+        print(patches.shape, cls_seg_feat.shape)
+        masks = patches @ cls_seg_feat  
+        # masks = tf.matmul(patches, cls_seg_feat, transpose_b=True)
         masks = self.mask_norm(masks)   # b (h w) n
         
         masks = tf.reshape(masks,[masks.shape[0],GS,masks.shape[1]//GS,masks.shape[2]]) # b h w n
