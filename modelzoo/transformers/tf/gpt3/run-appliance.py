@@ -18,10 +18,8 @@
 Run script for running on cerebras appliance cluster
 """
 
-import logging
 import os
 import sys
-import tempfile
 
 import tensorflow as tf
 
@@ -30,6 +28,7 @@ tf.compat.v1.disable_eager_execution()
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../../.."))
 
+<<<<<<< HEAD
 from cerebras_tensorflow.cs_estimator_app import CerebrasAppEstimator
 
 from cerebras_appliance.cs_run_config import CSRunConfig
@@ -39,12 +38,16 @@ from modelzoo.common.tf.appliance_utils import (
     parse_args_and_params,
 )
 from modelzoo.common.tf.run_utils import get_csrunconfig_dict
+=======
+from modelzoo.common.tf.appliance_utils import ExecutionStrategy, run_appliance
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 from modelzoo.transformers.tf.gpt2.data import eval_input_fn, train_input_fn
 from modelzoo.transformers.tf.gpt2.model import model_fn
 from modelzoo.transformers.tf.gpt2.utils import set_defaults
 
 
 def main():
+<<<<<<< HEAD
     run_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Parser cmdline arguments and get params
@@ -89,37 +92,19 @@ def main():
 
     # create estimator
     cs_estimator = CerebrasAppEstimator(
+=======
+    run_appliance(
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
         model_fn,
-        params=params,
-        config=cs_run_config,
-        model_dir=runconfig_params["model_dir"],
-        compile_dir=runconfig_params["compile_dir"],
-        warm_start_from=runconfig_params["checkpoint_path"],
+        train_input_fn,
+        eval_input_fn,
+        supported_strategies=[
+            ExecutionStrategy.weight_streaming,
+            ExecutionStrategy.pipeline,
+        ],
+        default_params_fn=set_defaults,
     )
-
-    # run the requested mode
-    if runconfig_params["validate_only"] or runconfig_params["compile_only"]:
-        cs_estimator.compile(
-            input_fn, validate_only=runconfig_params["validate_only"], mode=mode
-        )
-    elif runconfig_params["mode"] == 'eval':
-        cs_estimator.evaluate(
-            input_fn,
-            steps=runconfig_params["eval_steps"],
-            checkpoint_path=runconfig_params["checkpoint_path"],
-            use_cs=True,
-        )
-    elif runconfig_params["mode"] == "train":
-        cs_estimator.train(
-            input_fn,
-            steps=runconfig_params["steps"],
-            max_steps=runconfig_params["max_steps"],
-            use_cs=True,
-        )
-    else:
-        raise ValueError(f'Mode not supported: {runconfig_params["mode"]}')
 
 
 if __name__ == '__main__':
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     main()
