@@ -19,11 +19,7 @@ train_input:
     shuffle_buffer_size: 1000
     dataset: "SeverstalDataset"
     description: "UNet base model params on severstal dataset"
-<<<<<<< HEAD
-    dataset_path: "/u/hangzheng/project_bblg/modelzoo/modelzoo/unet/tf/data"
-=======
     dataset_path: "/path/to/severstal/dataset"
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
     train_batch_size: 256
     eval_batch_size: 32
     normalize_data_method: "zero_centered"

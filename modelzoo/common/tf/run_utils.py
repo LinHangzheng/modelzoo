@@ -158,20 +158,11 @@ def is_cs(params):
 
     :param dict params: runconfig dict to provide parameters for check
     """
-<<<<<<< HEAD
-<<<<<<< HEAD
-    return params.get("cs_ip") is not None or os.environ.get("K8S_CS_IP", None) is not None
-=======
-=======
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
+
     return (
         params.get("cs_ip") is not None
         or os.environ.get("K8S_CS_IP", None) is not None
     )
-<<<<<<< HEAD
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
-=======
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 
 
 def check_env(params):
