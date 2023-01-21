@@ -1,31 +1,22 @@
 # UNet Model (Experimental)
 
-**NOTE:** This is an experimental model and support for this model may be dropped in the future releases.
+- [UNet Model (Experimental)](#unet-model-experimental)
+  - [Introduction](#introduction)
+  - [Structure of the code in this folder](#structure-of-the-code-in-this-folder)
+  - [Datasets: DAGM 2007/Severstal Steel Defect Detection](#datasets-dagm-2007severstal-steel-defect-detection)
+    - [DAGM 2007 competition dataset](#dagm-2007-competition-dataset)
+  - [Severstal Steel Defect Detection dataset](#severstal-steel-defect-detection-dataset)
+  - [How to run](#how-to-run)
+    - [To compile/validate, run train and eval on Cerebras System](#to-compilevalidate-run-train-and-eval-on-cerebras-system)
+  - [To run train and eval on GPU/CPU](#to-run-train-and-eval-on-gpucpu)
+  - [YAML File Layout](#yaml-file-layout)
+  - [Citations](#citations)
+
+## Introduction
+
+**NOTE:** This is an experimental model and support for this model will be dropped in the future release. This code runs in Layered Pipeline mode and does not support large images. Please check [PyTorch UNet implementation](../../pytorch/unet/), which also supports large image size.
 
 UNet [1] is a convolutional neural network that was developed for biomedical image segmentation at the Computer Science Department of the University of Freiburg, Germany. The network is a fully convolutional network. This model currently supports two different datasets: DAGM2007, Severstal Steel Defect Detection.
-
-### How to Run on GPU:
-
-To run the UNet model, use the following command:
-```
-python run.py --params /path/to/yaml --model_dir /path/to/modeldir --mode train
-```
-
-### How to run on the Cerebras System
-
-To run on the Cerebras System, you need to specify the Cerebras System IP address and to execute `run.py` script within Cerebras environment, i.e. within Singularity container with Cerebras client software. The Cerebras System IP address can be typically set either in `params.yaml` or as a CLI argument `--cs_ip x.x.x.x`.
-
-Within Cerebras environment usually the following modes are supported for `run.py` :
-
-* `validate_only`: with this mode, we'll do a quick validation that the model code is compatible with the Cerebras System. Compilation process will go up to kernel matching.  
-* `compile_only`: will run end-to-end compilation and generate compiled executable.
-* `train`: will compile and train on the Cerebras System.
-
-To train on the Cerebras System, run the same script inside the Cerebras environment and pass a Cerebras System IP address:
-
-```bash
-python run.py --mode train --cs_ip x.x.x.x
-```
 
 ### Structure of the code in this folder
 
@@ -78,6 +69,31 @@ python inputs/write_severstal_tfrecords_binary.py --params configs/params_severs
 Then, update the `dataset_path` field in `configs/params_severstal_tfrecords.yaml` and use this config file to train UNet.
 
 On this dataset, the UNet model is expected to achieve mIOU of 0.71 and Dice Similarity Coefficient of 0.81 at convergence, with default parameters in YAML file.
+
+### How to run
+
+#### To compile/validate, run train and eval on Cerebras System
+
+To run on the Cerebras System, you need to specify the Cerebras System IP address and to execute `run.py` script within Cerebras environment, i.e. within Singularity container with Cerebras client software. The Cerebras System IP address can be typically set either in `params.yaml` or as a CLI argument `--cs_ip x.x.x.x`.
+
+Within Cerebras environment usually the following modes are supported for `run.py` :
+
+* `validate_only`: with this mode, we'll do a quick validation that the model code is compatible with the Cerebras System. Compilation process will go up to kernel matching.  
+* `compile_only`: will run end-to-end compilation and generate compiled executable.
+* `train`: will compile and train on the Cerebras System.
+
+To train on the Cerebras System, run the same script inside the Cerebras environment and pass a Cerebras System IP address:
+
+```bash
+python run.py --mode train --cs_ip x.x.x.x
+```
+
+### To run train and eval on GPU/CPU
+
+To run the UNet model, use the following command:
+```
+python run.py --params /path/to/yaml --model_dir /path/to/modeldir --mode train
+```
 
 ### YAML File Layout
 

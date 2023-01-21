@@ -154,11 +154,14 @@ Configs below are meant to be run on Pipeline mode using Appliance mode and Kube
 **YAML config file differences**:
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - `params_gpt2_small.yaml` have the standard gpt2-base config with `hidden_size=768`, `num_hidden_layers=12`, `num_heads=12`
 - `params_gpt2_medium.yaml` have the standard gpt2-medium config with `hidden_size=1024`, `num_hidden_layers=24`, `num_heads=16`
 - `params_gpt2_large.yaml` have the standard gpt2-large config with `hidden_size=1280`, `num_hidden_layers=36`, `num_heads=20`
 - `params_gpt2_xl_ws_early_access.yaml` have the standard gpt2-extra large config (The GPT2) with `hidden_size=1600`, `num_hidden_layers=48`, `num_heads=16`. Works in Weight Streaming mode.
 =======
+=======
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 - [params_gpt2_small.yaml](./configs/params_gpt2_small.yaml): A 117M parameter 
 model with the standard gpt2-base config with `hidden_size=768`, 
 `num_hidden_layers=12`, `num_heads=12`.
@@ -170,6 +173,9 @@ Following configs are meant for running in Weight Streaming mode with Appliance 
 - [params_gpt2_small_ws.yaml](./configs/params_gpt2_small_ws.yaml) have the standard gpt2-base config with `hidden_size=768`, `num_hidden_layers=12`, `num_heads=12`, for Weight Streaming mode.
 - [params_gpt2_large.yaml](./configs/params_gpt2_large.yaml) have the standard gpt2-large config with `hidden_size=1280`, `num_hidden_layers=36`, `num_heads=20`, for Weight Streaming mode.
 - [params_gpt2_xl.yaml](./configs/params_gpt2_xl.yaml) have the standard gpt2-xl config with `hidden_size=1600`, `num_hidden_layers=48`, `num_heads=16`, for Weight Streaming mode.
+<<<<<<< HEAD
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
+=======
 >>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 
 

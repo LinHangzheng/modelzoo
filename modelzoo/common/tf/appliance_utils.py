@@ -25,12 +25,18 @@ import os
 from typing import Callable, List, Optional
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from cerebras_appliance.pb.client.common_config_pb2 import DebugArgs
 from modelzoo.common.tf.run_utils import (
     get_params,
     save_params,
     update_params_from_args,
 )
+=======
+import tensorflow as tf
+import yaml
+from cerebras_tensorflow.cs_estimator_app import CerebrasAppEstimator
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 =======
 import tensorflow as tf
 import yaml

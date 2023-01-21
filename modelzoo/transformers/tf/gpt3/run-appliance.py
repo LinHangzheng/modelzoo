@@ -29,6 +29,7 @@ tf.compat.v1.disable_eager_execution()
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../../.."))
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from cerebras_tensorflow.cs_estimator_app import CerebrasAppEstimator
 
 from cerebras_appliance.cs_run_config import CSRunConfig
@@ -41,12 +42,16 @@ from modelzoo.common.tf.run_utils import get_csrunconfig_dict
 =======
 from modelzoo.common.tf.appliance_utils import ExecutionStrategy, run_appliance
 >>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
+=======
+from modelzoo.common.tf.appliance_utils import ExecutionStrategy, run_appliance
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 from modelzoo.transformers.tf.gpt2.data import eval_input_fn, train_input_fn
 from modelzoo.transformers.tf.gpt2.model import model_fn
 from modelzoo.transformers.tf.gpt2.utils import set_defaults
 
 
 def main():
+<<<<<<< HEAD
 <<<<<<< HEAD
     run_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -92,6 +97,9 @@ def main():
 
     # create estimator
     cs_estimator = CerebrasAppEstimator(
+=======
+    run_appliance(
+>>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 =======
     run_appliance(
 >>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
