@@ -79,19 +79,11 @@ class PyTorchBaseModel(ABC):
 
         # Whether or not to allow multireplica runs
         # default to false for eval runs.
-<<<<<<< HEAD
-<<<<<<< HEAD
-        self.allow_multireplica = params["model"].get(
-            "allow_multireplica", True
-        ) and self.mode == "train"
-=======
-=======
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
+
         self.allow_multireplica = (
             params["model"].get("allow_multireplica", True)
             and self.mode == "train"
         )
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168
 
         seed = params["runconfig"].get("seed", None)
         if seed is not None:
