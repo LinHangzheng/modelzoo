@@ -1,0 +1,123 @@
+description: FC-MNIST base model params
+eval_input:
+  IR_channel_level: 2
+  IR_threshould: 0.075
+  augment_data: false
+  batch_size: 1
+  data_dir: data
+  data_processor: IRDatasetProcessor
+  dataset: IR_dataset
+  image_shape: &id001
+  - 96
+  - 96
+  - 19
+  loss: ce
+  mixed_precision: true
+  num_classes: 7
+  num_parallel_calls: 0
+  num_workers: 2
+  patch_size: 32
+  patch_step: 320
+  shuffle: false
+  shuffle_buffer_size: 10000
+  train_test_split: 0.79
+  vit_patch_size: 16
+model:
+  bias_initializer: zeros
+  compute_eval_metrics: true
+  convs_per_block:
+  - 3x3_conv
+  - 3x3_conv
+  decoder_filters:
+  - 128
+  - 64
+  - 32
+  downscale_bottleneck: false
+  downscale_encoder_blocks: false
+  downscale_first_conv: false
+  downscale_method: max_pool
+  enable_bias: true
+  encoder_filters:
+  - 32
+  - 64
+  - 128
+  - 256
+  eval_ignore_classes: null
+  eval_metrics:
+  - mIOU
+  - DSC
+  - Acc
+  initializer:
+    gain: 1.0
+    name: glorot_uniform
+  input_channels: 19
+  loss: ce
+  mixed_precision: true
+  nonlinearity: ReLU
+  norm_layer: batchnorm2d
+  num_classes: 7
+  residual_blocks: false
+  skip_connect: true
+  use_bfloat16: false
+  use_conv3d: false
+optimizer:
+  learning_rate: 0.0005
+  loss_scaling_factor: dynamic
+  optimizer_type: AdamW
+  weight_decay_rate: 0.01
+runconfig:
+  appliance: null
+  checkpoint_path: null
+  checkpoint_steps: 500
+  compile_dir: null
+  compile_only: null
+  config: null
+  cpu: null
+  credentials_path: null
+  cs_ip: null
+  debug_args_path: null
+  dist_addr: localhost:8888
+  dist_backend: nccl
+  execution_strategy: null
+  fabric_config_file: null
+  init_method: env://
+  is_pretrained_checkpoint: false
+  log_steps: 100
+  logging: null
+  max_steps: 8000
+  mgmt_address: cluster-server.cerebras.com:443
+  mode: train
+  model_dir: /home/hangzheng/modelzoo/modelzoo/unet/pytorch/model_dir
+  mount_dirs: null
+  multireplica: null
+  num_csx: 1
+  num_wgt_servers: 1
+  num_workers_per_csx: 0
+  params: configs/params.yaml
+  python_paths: null
+  save_initial_checkpoint: true
+  save_losses: true
+  seed: 1
+  service_dir: /home/hangzheng/modelzoo/modelzoo/unet/pytorch/model_dir
+  show_debug_metrics: false
+  transfer_processes: null
+  validate_only: null
+train_input:
+  IR_channel_level: 2
+  IR_threshould: 0.075
+  augment_data: true
+  batch_size: 2
+  data_dir: data
+  data_processor: IRDatasetProcessor
+  dataset: IR_dataset
+  image_shape: *id001
+  loss: ce
+  mixed_precision: true
+  num_classes: 7
+  num_parallel_calls: 0
+  patch_size: 32
+  patch_step: 320
+  shuffle: true
+  shuffle_buffer_size: 10000
+  train_test_split: 0.79
+  vit_patch_size: 16

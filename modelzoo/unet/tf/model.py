@@ -18,11 +18,7 @@ UNet Model function to be used with TF Estimator API
 import tensorflow as tf
 
 from modelzoo.common.tf.estimator.cs_estimator_spec import CSEstimatorSpec
-<<<<<<< HEAD:modelzoo/unet_medical/tf/model.py
-from modelzoo.unet_medical.tf.UNetModel import UNetModel
-=======
 from modelzoo.vision.tf.unet.UNetModel import UNetModel
->>>>>>> a3bf8f62b2f2e46d0d9ae688911596df52a36168:modelzoo/vision/tf/unet/model.py
 
 
 def model_fn(features, labels, mode, params):
