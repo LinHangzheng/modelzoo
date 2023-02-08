@@ -1,27 +1,23 @@
-description: FC-MNIST base model params
+description: UNet base model params
 eval_input:
   IR_channel_level: 2
-  IR_threshould: 0.075
   augment_data: false
   batch_size: 1
-  data_dir: data
+  class_id: 1
+  data_dir: /home/hangzheng/tissue_segmentation/data
   data_processor: IRDatasetProcessor
   dataset: IR_dataset
   image_shape: &id001
   - 96
   - 96
-  - 19
-  loss: ce
+  - 17
+  loss: bce
   mixed_precision: true
-  num_classes: 7
+  num_classes: 2
   num_parallel_calls: 0
   num_workers: 2
-  patch_size: 32
-  patch_step: 320
   shuffle: false
   shuffle_buffer_size: 10000
-  train_test_split: 0.79
-  vit_patch_size: 16
 model:
   bias_initializer: zeros
   compute_eval_metrics: true
@@ -50,12 +46,12 @@ model:
   initializer:
     gain: 1.0
     name: glorot_uniform
-  input_channels: 19
-  loss: ce
+  input_channels: 17
+  loss: bce
   mixed_precision: true
   nonlinearity: ReLU
   norm_layer: batchnorm2d
-  num_classes: 7
+  num_classes: 2
   residual_blocks: false
   skip_connect: true
   use_bfloat16: false
@@ -70,12 +66,12 @@ runconfig:
   checkpoint_path: null
   checkpoint_steps: 500
   compile_dir: null
-  compile_only: null
+  compile_only: true
   config: null
   cpu: null
   credentials_path: null
   cs_ip: null
-  debug_args_path: null
+  debug_args_path: /home/hangzheng/modelzoo/modelzoo/unet/pytorch/model_dir/.debug_args.proto
   dist_addr: localhost:8888
   dist_backend: nccl
   execution_strategy: null
@@ -104,20 +100,16 @@ runconfig:
   validate_only: null
 train_input:
   IR_channel_level: 2
-  IR_threshould: 0.075
   augment_data: true
   batch_size: 2
-  data_dir: data
+  class_id: 1
+  data_dir: /home/hangzheng/tissue_segmentation/data
   data_processor: IRDatasetProcessor
   dataset: IR_dataset
   image_shape: *id001
-  loss: ce
+  loss: bce
   mixed_precision: true
-  num_classes: 7
+  num_classes: 2
   num_parallel_calls: 0
-  patch_size: 32
-  patch_step: 320
   shuffle: true
   shuffle_buffer_size: 10000
-  train_test_split: 0.79
-  vit_patch_size: 16

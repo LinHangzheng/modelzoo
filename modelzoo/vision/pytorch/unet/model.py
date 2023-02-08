@@ -22,10 +22,11 @@ from modelzoo.common.pytorch.metrics import (
 from modelzoo.common.pytorch.PyTorchBaseModel import PyTorchBaseModel
 from modelzoo.common.pytorch.run_utils import half_dtype_instance
 from modelzoo.vision.pytorch.unet.modeling_unet import UNet
-
+from modelzoo.vision.pytorch.unet.utils import set_custom_stack_params
 
 class UNetModel(PyTorchBaseModel):
     def __init__(self, params, device=None):
+        set_custom_stack_params(params)
         self.params = params
         model_params = self.params["model"].copy()
         self.loss_type = model_params["loss"]

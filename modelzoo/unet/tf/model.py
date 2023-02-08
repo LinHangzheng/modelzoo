@@ -18,7 +18,10 @@ UNet Model function to be used with TF Estimator API
 import tensorflow as tf
 
 from modelzoo.common.tf.estimator.cs_estimator_spec import CSEstimatorSpec
-from modelzoo.vision.tf.unet.UNetModel import UNetModel
+
+
+from modelzoo.unet.tf.UNetModel import UNetModel
+
 
 
 def model_fn(features, labels, mode, params):
@@ -37,9 +40,9 @@ def model_fn(features, labels, mode, params):
         # This context manager is needed so that the moving stats in batchnorm layers
         # are updated during train time. Without this, running this model in eval mode produces
         # nonsense results since the batchnorm stats are essentially uninitalized.
-        update_ops = model.get_updates()
-        with tf.control_dependencies(update_ops):
-            train_op = model.build_train_ops(loss)
+        # update_ops = model.get_updates()
+        # with tf.control_dependencies(update_ops):
+        train_op = model.build_train_ops(loss)
     elif mode == tf.estimator.ModeKeys.EVAL:
         evaluation_hooks = model.get_evaluation_hooks(logits, labels, features)
         host_call = (model.build_eval_metric_ops, [logits, labels, features])

@@ -87,10 +87,12 @@ class IRDatasetProcessor(Dataset):
         self.drop_last = params.get("drop_last", True)
         self.prefetch_factor = params.get("prefetch_factor", 10)
         self.persistent_workers = params.get("persistent_workers", True)
-
+        self.class_id = params["class_id"]
         self.mixed_precision = params.get("mixed_precision")
         if self.mixed_precision:
             self.mp_type = half_dtype_instance.half_dtype
+        elif self.loss_type=="ce":
+            self.mp_type = torch.LongTensor
         else:
             self.mp_type = torch.float32
 
@@ -190,8 +192,8 @@ class IRDatasetProcessor(Dataset):
             if self.image_shape[0] != self.image_shape[1]:  # H != W
                 # For a rectangle image
                 n_rotations = n_rotations * 2
-            h = torch.randint(high=self.large_patch_size[0]-self.image_shape[0]-1,size=(1,))
-            w = torch.randint(high=self.large_patch_size[1]-self.image_shape[1]-1,size=(1,))
+            h = torch.randint(high=image.shape[1]-self.image_shape[0]-1,size=(1,))
+            w = torch.randint(high=image.shape[2]-self.image_shape[1]-1,size=(1,))
              
             augment_transform_image = self.get_augment_transforms(
                 do_horizontal_flip=do_horizontal_flip,
@@ -217,18 +219,27 @@ class IRDatasetProcessor(Dataset):
 
         # Handle dtypes and mask shapes based on `loss_type`
         # and `mixed_precsion`
-
+        if self.class_id is not None:
+            mask[torch.where(mask!=self.class_id)]=0
         if self.loss_type == "bce":
             mask = mask.to(self.mp_type)
+        if self.loss_type == "ce":
+            mask = mask.type(self.mp_type)
         if self.mixed_precision:
             image = image.to(self.mp_type)
-
+        
         return image, mask
 
     def get_augment_transforms(
         self, do_horizontal_flip, n_rotations, do_random_brightness, crop_h, crop_w, image_height, image_width
     ):
         augment_transforms_list = []
+        if image_height is not None:
+            crop_transform = transforms.Lambda(
+                lambda x: transforms.functional.crop(x, top=crop_h, left=crop_w, height=image_height, width=image_width)
+            )
+            augment_transforms_list.append(crop_transform)
+            
         if do_horizontal_flip:
             horizontal_flip_transform = transforms.Lambda(
                 lambda x: transforms.functional.hflip(x)
@@ -246,11 +257,5 @@ class IRDatasetProcessor(Dataset):
                 lambda x: adjust_brightness_transform(x, p=0.5, delta=0.2)
             )
             augment_transforms_list.append(brightness_transform)
-            
-        if image_height is not None:
-            crop_transform = transforms.Lambda(
-                lambda x: transforms.functional.crop(x, top=crop_h, left=crop_w, height=image_height, width=image_width)
-            )
-            augment_transforms_list.append(crop_transform)
             
         return transforms.Compose(augment_transforms_list)

@@ -19,14 +19,6 @@ import os
 
 import yaml
 
-from modelzoo.common.tf.run_utils import is_cs
-try:
-    from cerebras.pb.common.tri_state_pb2 import TS_DISABLED, TS_ENABLED
-    from cerebras.pb.stack.autogen_pb2 import AP_ENABLED
-    from cerebras.pb.stack.full_pb2 import FullConfig
-except ImportError:
-    pass  # non-cbcore run
-
 # Visualization color codes
 color_codes = [
     (0, 0, 0),
@@ -150,66 +142,3 @@ def set_defaults(params):
             "use_cbfloat16=True can only be used in mixed precision"
             " mode. Set mixed_precision to True."
         )
-
-
-
-def get_custom_stack_params(params):
-    stack_params = {}
-    runconfig_params = params["runconfig"]
-
-    if params["model"].get("multireplica"):
-        runconfig_params["multireplica"] = True
-
-    if "ir_mode" in runconfig_params:
-        stack_params["ir_mode"] = runconfig_params["ir_mode"]
-    else:
-        stack_params["ir_mode"] = "mlir-cirh"
-
-        model_params = params["model"]
-        if (
-            "pooler_type" in model_params
-            and model_params["pooler_type"] != "first"
-        ):
-            stack_params["ir_mode"] = "mlir-xla"
-
-    if (
-        is_cs(runconfig_params)
-        or runconfig_params["validate_only"]
-        or runconfig_params["compile_only"]
-    ):
-        stack_params["config"] = set_custom_config(FullConfig(), params)
-
-    return stack_params
-
-
-def set_custom_config(config, params):
-    runconfig_params = params["runconfig"]
-    config.placement.optimize_buses.deltat_relative_margin = 0.5
-    # if params["train_input"]["max_sequence_length"] <= 512:
-    #     config.matching.kernel.no_dcache_spill_splits = True
-    # if params["train_input"]["max_sequence_length"] > 512:
-    #     config.matching.kernel.inc_pwt_estimate = True
-    # enable Autogen for extractive summarization model.
-    config.matching.autogen_policy = AP_ENABLED
-    # Enable multi-replica
-    if runconfig_params.get("multireplica"):
-        config.target_num_replicas = -1
-        config.placement.pathfinder_inter_replica.fix_existing = TS_DISABLED
-        config.placement.pathfinder_inter_replica.allow_infeasible_initial_state = (
-            TS_ENABLED
-        )
-        config.matching.match_lair.disabled_converters.append(
-            "AttentionCIRHConverter"
-        )
-
-    if params["model"].get("use_vsl", False):
-        config.matching.kernel.use_legacy_vsl = True
-
-    if runconfig_params.get("mode", "train") == "eval":
-        config.matching.add_pack_and_unpack.max_egress_per_pack = 1
-        config.placement.prep_recolor_kernels.wrap_pack_kernel = True
-        config.matching.match_lair.disabled_converters.append(
-            "UnsortedGatherConverter"
-        )
-
-    return config

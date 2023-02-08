@@ -18,12 +18,12 @@ UNet Data Input Pipeline
 
 import sys
 
-from modelzoo.unet_medical.tf.input import (  # noqa
+from modelzoo.unet.tf.input import (  # noqa
     DAGM2007Dataset,
     DAGM2007TFRecordsDataset,
     SeverstalDataset,
     SeverstalTFRecordsDataset,
-    IR_dataset,
+    IRDataset,
 )
 
 

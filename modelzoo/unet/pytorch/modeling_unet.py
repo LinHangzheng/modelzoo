@@ -20,9 +20,9 @@ from modelzoo.common.pytorch.model_utils.create_initializer import (
 )
 from modelzoo.common.pytorch.run_utils import half_dtype_instance
 from modelzoo.vision.pytorch.layers.ConvNormActBlock import ConvNormActBlock
-from modelzoo.unet.pytorch.layers.Decoder import Decoder
-from modelzoo.unet.pytorch.layers.Encoder import Encoder
-from modelzoo.unet.pytorch.layers.UNetBlock import UNetBlock
+from modelzoo.vision.pytorch.unet.layers.Decoder import Decoder
+from modelzoo.vision.pytorch.unet.layers.Encoder import Encoder
+from modelzoo.vision.pytorch.unet.layers.UNetBlock import UNetBlock
 
 
 class UNet(nn.Module):
@@ -58,15 +58,13 @@ class UNet(nn.Module):
         self.downscale_bottleneck = model_params["downscale_bottleneck"]
 
         self.loss_type = model_params.get("loss", "bce")
-        # assert (
-        #     self.num_classes == 2
-        # ), "BCE loss may only be used when there are two classes!"
-        self.num_output_channels = self.num_classes
+        assert (
+            self.num_classes == 2
+        ), "BCE loss may only be used when there are two classes!"
+        self.num_output_channels = 1
         if "bce" in self.loss_type:
             self.loss_fn = self.bce_loss
-        elif self.loss_type == "ce":
-            self.loss_fn = nn.CrossEntropyLoss()
-            
+
         if self.residual_blocks:
             assert self.downscale_method == "max_pool"
 

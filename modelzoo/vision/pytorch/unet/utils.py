@@ -18,7 +18,12 @@ import tempfile
 
 from modelzoo.common.pytorch import cb_model as cm
 from modelzoo.common.pytorch.utils import get_debug_args
-
+try:
+    from cerebras.pb.common.tri_state_pb2 import TS_DISABLED, TS_ENABLED
+    from cerebras.pb.stack.autogen_pb2 import AP_ENABLED
+    from cerebras.pb.stack.full_pb2 import FullConfig
+except ImportError:
+    pass  # non-cbcore run
 
 def get_default_inis():
     return {
@@ -151,11 +156,19 @@ def set_defaults(params):
             params[input_key][model_key] = params["model"].get(model_key)
 
 
+# def set_custom_stack_params(params):
+#     # TODO: Add custom stack params for UNet if any.
+#     # Fcn used in `model.py` __init__
+#     if cm.use_cs():
+#         from modelzoo.common.pytorch import cbtorch
+
+#         state = cbtorch.state()
+#         runconfig_params = params["runconfig"]
+
 def set_custom_stack_params(params):
     # TODO: Add custom stack params for UNet if any.
     # Fcn used in `model.py` __init__
     if cm.use_cs():
         from modelzoo.common.pytorch import cbtorch
-
         state = cbtorch.state()
-        runconfig_params = params["runconfig"]
+        state.full_config.matching.autogen_policy = AP_ENABLED

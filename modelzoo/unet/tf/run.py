@@ -22,7 +22,7 @@ import sys
 
 import tensorflow as tf
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../.."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../../"))
 from modelzoo.common.tf.estimator.cs_estimator import CerebrasEstimator
 from modelzoo.common.tf.estimator.run_config import CSRunConfig
 from modelzoo.common.tf.run_utils import (
@@ -33,12 +33,10 @@ from modelzoo.common.tf.run_utils import (
     save_params,
     update_params_from_args,
 )
-from modelzoo.unet_medical.tf.data import eval_input_fn, train_input_fn
-from modelzoo.unet_medical.tf.model import model_fn
-from modelzoo.unet_medical.tf.utils import (
-    get_params,
-    get_custom_stack_params
-)
+from modelzoo.unet.tf.data import eval_input_fn, train_input_fn
+from modelzoo.unet.tf.model import model_fn
+from modelzoo.unet.tf.utils import get_params
+
 
 def create_arg_parser():
     """
@@ -176,14 +174,11 @@ def run(
     params["use_cs"] = use_cs
     csrunconfig_dict = get_csrunconfig_dict(runconfig_params)
 
-    stack_params = get_custom_stack_params(params)
-    
     # prep cs1 run environment, run config and estimator
     check_env(runconfig_params)
     est_config = CSRunConfig(
         cs_ip=runconfig_params["cs_ip"],
         cs_config=cs_config,
-        stack_params=stack_params,
         **csrunconfig_dict,
     )
 
@@ -247,6 +242,11 @@ def main():
     """
     Main function
     """
+    
+    print("Python version")
+    print (sys.version)
+    print("tensorflow version")
+    print(tf. __version__)
     parser = create_arg_parser()
     args = parser.parse_args(sys.argv[1:])
     params = get_params(args.params)
