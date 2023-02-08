@@ -114,14 +114,15 @@ class MaskTransformer(BaseLayer):
             x = decoder(x, mask=None, ret_scores=self.ret_scores)
         x = self.decoder_norm(x)
         
+        # [b,4,768], [b,7,768]
         patches, cls_seg_feat = x[:, : -self.class_num], x[:, -self.class_num :]
-        patches =  patches @ self.proj_patch
-        cls_seg_feat = cls_seg_feat @ self.proj_classes
+        patches =  patches @ self.proj_patch    # [b,4,768]
+        cls_seg_feat = cls_seg_feat @ self.proj_classes # [b,7,768]
         
-        patches = patches / tf.norm(patches,axis=-1, keepdims=True)
-        cls_seg_feat = cls_seg_feat / tf.norm(cls_seg_feat,axis=-1, keepdims=True) 
+        patches = patches / tf.norm(patches,axis=-1, keepdims=True) # [b,4,768]
+        cls_seg_feat = cls_seg_feat / tf.norm(cls_seg_feat,axis=-1, keepdims=True)  # [b,7,768]
         
-        masks = tf.matmul(patches, cls_seg_feat, transpose_b=True)
+        masks = tf.matmul(patches, cls_seg_feat, transpose_b=True) # [b, 4, 7]
         masks = self.mask_norm(masks)   # b (h w) n
         
         masks = tf.reshape(masks,[masks.shape[0],GS,masks.shape[1]//GS,masks.shape[2]]) # b h w n
