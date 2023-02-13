@@ -23,6 +23,7 @@ from modelzoo.unet.tf.input import (  # noqa
     DAGM2007TFRecordsDataset,
     SeverstalDataset,
     SeverstalTFRecordsDataset,
+    IRDataset,
 )
 
 

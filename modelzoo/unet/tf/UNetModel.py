@@ -23,6 +23,8 @@ from modelzoo.common.tf.layers.ActivationLayer import ActivationLayer
 from modelzoo.common.tf.layers.Conv2DLayer import Conv2DLayer
 from modelzoo.common.tf.layers.Conv2DTransposeLayer import Conv2DTransposeLayer
 from modelzoo.common.tf.layers.MaxPool2DLayer import MaxPool2DLayer
+from modelzoo.common.tf.layers.CrossEntropyFromLogitsLayer import CrossEntropyFromLogitsLayer
+from modelzoo.common.tf.layers.ReshapeLayer import ReshapeLayer
 from modelzoo.common.tf.metrics.dice_coefficient import dice_coefficient_metric
 from modelzoo.common.tf.optimizers.Trainer import Trainer
 from modelzoo.common.tf.TFBaseModel import TFBaseModel
@@ -40,10 +42,10 @@ class UNetModel(TFBaseModel):
         )
 
         self.num_classes = params["train_input"]["num_classes"]
-        assert (
-            self.num_classes == 2
-        ), "Currently only binary classification is supported!"
-        self.num_output_channels = 1
+        # assert (
+        #     self.num_classes == 2
+        # ), "Currently only binary classification is supported!"
+        self.num_output_channels = 7
 
         self.logging_dict = {}
 
@@ -105,6 +107,12 @@ class UNetModel(TFBaseModel):
             tf_summary=self.tf_summary,
             mixed_precision=self.mixed_precision,
         )
+        self.loss = CrossEntropyFromLogitsLayer(
+                        boundary_casting=self.boundary_casting,
+                        tf_summary=self.tf_summary,
+                        dtype=self.policy,)
+
+
 
     def _unet_block(self, x, block_idx, n_filters, encoder=True):
         with tf.compat.v1.name_scope(f"block{block_idx}"):
@@ -156,6 +164,12 @@ class UNetModel(TFBaseModel):
             return x, x
 
     def build_model(self, features, mode):
+        self.reshape = ReshapeLayer(
+            [self.num_classes,features.shape[2]*features.shape[3]],
+            boundary_casting=self.boundary_casting,
+            tf_summary=self.tf_summary,
+            dtype=self.policy,
+        )
         # Get input image.
         x = features
 
@@ -270,19 +284,19 @@ class UNetModel(TFBaseModel):
         is_training = mode == tf.estimator.ModeKeys.TRAIN
 
         # Flatten the logits
-        flatten = Flatten(
-            dtype="float16" if self.mixed_precision else "float32"
-        )
-        reshaped_logits = flatten(logits)
+        # flatten = Flatten(
+        #     dtype="float16" if self.mixed_precision else "float32"
+        # )
+        # reshaped_logits = flatten(logits)
 
+        reshaped_logits = self.reshape(logits)
+        reshaped_logits = tf.transpose(reshaped_logits,[0,2,1])
         # Binary Cross-Entropy loss
-        loss = tf.compat.v1.losses.sigmoid_cross_entropy(
+        loss = self.loss(
             reshaped_mask_image,
-            reshaped_logits,
-            loss_collection=None,
-            reduction=Reduction.SUM_OVER_BATCH_SIZE,
+            reshaped_logits
         )
-
+        loss = tf.math.reduce_mean(loss)
         if self.log_image_summaries and is_training:
             self._write_image_summaries(
                 logits, input_image, reshaped_mask_image, is_training=True,

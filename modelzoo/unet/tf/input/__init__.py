@@ -16,10 +16,12 @@ from .dagm2007_dataset import DAGM2007Dataset
 from .dagm2007_tfrecords_dataset import DAGM2007TFRecordsDataset
 from .severstal_dataset import SeverstalDataset
 from .severstal_tfrecords_dataset import SeverstalTFRecordsDataset
+from .IR_dataset import IRDataset
 
 __all__ = [
     "DAGM2007Dataset",
     "DAGM2007TFRecordsDataset",
     "SeverstalDataset",
     "SeverstalTFRecordsDataset",
+    "IRDataset",
 ]

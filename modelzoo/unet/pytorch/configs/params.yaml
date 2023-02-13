@@ -1,0 +1,57 @@
+# Params for FC MNIST model
+description: "UNet base model params"
+
+train_input: &train_input
+    data_processor: "IRDatasetProcessor"
+    shuffle: True
+    shuffle_buffer_size : 10000
+    augment_data: True
+    data_dir: '/home/hangzheng/tissue_segmentation/data' # Place to store data
+    batch_size: 2   
+    num_parallel_calls: 0   # 0 means AUTOTUNE
+    num_classes: 2
+    dataset: "IR_dataset"
+    image_shape: [96, 96, 17] # [H, W, C]
+    IR_channel_level: 2 # up to 19 
+    class_id: 1
+
+eval_input: &eval_input
+    <<: *train_input
+    augment_data: False
+    shuffle: False
+    batch_size: 1
+    num_workers: 2
+
+model:
+    nonlinearity: "ReLU"
+    skip_connect: True
+    enable_bias: True
+    downscale_method: "max_pool"
+    convs_per_block: ["3x3_conv", "3x3_conv"]
+    encoder_filters: [32, 64, 128, 256]
+    decoder_filters: [128, 64, 32]
+    residual_blocks: False
+    initializer: 
+        "name": "glorot_uniform"
+        "gain": 1.0
+    bias_initializer: "zeros"
+    # bce -> Binary Cross Entropy With Logits
+    loss: "bce"
+    mixed_precision: True
+    norm_layer: "batchnorm2d"
+
+optimizer:
+    optimizer_type: "AdamW"
+    weight_decay_rate: 0.01
+    learning_rate: 5.0e-4
+    loss_scaling_factor: "dynamic"
+
+runconfig:
+    max_steps: 8000
+    log_steps: 100
+    checkpoint_steps: 500
+    seed: 1
+    show_debug_metrics: False
+    save_losses: True
+    save_initial_checkpoint: True
+    num_wgt_servers: 1
