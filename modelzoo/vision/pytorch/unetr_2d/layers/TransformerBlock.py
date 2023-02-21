@@ -7,7 +7,7 @@ from modelzoo.common.pytorch.layers.TransformerEncoder import TransformerEncoder
 from modelzoo.common.pytorch.layers.TransformerEncoderLayer import (
     TransformerEncoderLayer,
 )
-from modelzoo.vision.pytorch.layers import Tra
+
 class PositionwiseFeedForward(nn.Module):
     def __init__(self, d_model=786, d_ff=2048, dropout=0.1, act='relu'):
         super().__init__()

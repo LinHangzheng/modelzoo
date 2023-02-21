@@ -1,1 +1,1 @@
-from TransformerBlock import Transformer
+from .TransformerBlock import Transformer

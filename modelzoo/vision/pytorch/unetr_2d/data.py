@@ -14,7 +14,7 @@
 
 import sys
 
-from modelzoo.unet.pytorch.input.IRDatasetProcessor import(
+from modelzoo.vision.pytorch.unetr_2d.input.IRDatasetProcessor import(
     IRDatasetProcessor
 )
 

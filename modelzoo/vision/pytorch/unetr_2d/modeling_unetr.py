@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from modelzoo.vision.pytorch.unet.layers import Transformer
+from modelzoo.common.pytorch.run_utils import half_dtype_instance
+from modelzoo.vision.pytorch.unetr_2d.layers import Transformer
 from modelzoo.vision.pytorch.layers.ConvNormActBlock import ConvNormActBlock
 
 class DeConv2dBlock(nn.Module):
@@ -18,6 +19,23 @@ class DeConv2dBlock(nn.Module):
 
 
 class UNETR(nn.Module):
+    
+    def bce_loss(self, outputs, labels):
+        neg_outputs = -1 * outputs
+        zero_const = torch.tensor(
+            0.0, dtype=outputs.dtype, device=outputs.device
+        )
+        max_val = torch.where(neg_outputs > zero_const, neg_outputs, zero_const)
+        loss = (
+            (1 - labels)
+            .mul(outputs)
+            .add(max_val)
+            .add((-max_val).exp().add((neg_outputs - max_val).exp()).log())
+        )
+        mean = torch.mean(loss)
+        # The return needs to be a dtype of FP16 for WS
+        return mean.to(half_dtype_instance.half_dtype)
+    
     def __init__(self, model_params):
         
         super(UNETR, self).__init__()
@@ -31,7 +49,9 @@ class UNETR(nn.Module):
         self.mlp_hidden = model_params["mlp_hidden"]
         self.num_layers = model_params["num_layers"]
         self.ext_layers = model_params["ext_layers"]
-
+        self.loss_type = model_params["loss"]
+        if "bce" in self.loss_type:
+            self.loss_fn = self.bce_loss
         self.patch_dim = [x // self.patch_size for x in self.img_shape]
 
         # Transformer Encoder
@@ -51,8 +71,8 @@ class UNETR(nn.Module):
         # U-Net Decoder
         self.decoder0 = \
             nn.Sequential(
-                ConvNormActBlock(self.input_dim, 32, 3),
-                ConvNormActBlock(32, 64, 3)
+                ConvNormActBlock(self.input_dim, 32, 3, padding='same'),
+                ConvNormActBlock(32, 64, 3, padding='same')
             )
 
         self.decoder3 = \
@@ -76,41 +96,41 @@ class UNETR(nn.Module):
 
         self.decoder9_upsampler = \
             nn.Sequential(
-                ConvNormActBlock(1024, 512),
-                ConvNormActBlock(512, 512),
-                ConvNormActBlock(512, 512),
+                ConvNormActBlock(1024, 512, 3, padding='same'),
+                ConvNormActBlock(512, 512, 3, padding='same'),
+                ConvNormActBlock(512, 512, 3, padding='same'),
                 nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
             )
 
         self.decoder6_upsampler = \
             nn.Sequential(
-                ConvNormActBlock(512, 256),
-                ConvNormActBlock(256, 256),
+                ConvNormActBlock(512, 256, 3, padding='same'),
+                ConvNormActBlock(256, 256, 3, padding='same'),
                 nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
             )
 
         self.decoder3_upsampler = \
             nn.Sequential(
-                ConvNormActBlock(256, 128),
-                ConvNormActBlock(128, 128),
+                ConvNormActBlock(256, 128, 3, padding='same'),
+                ConvNormActBlock(128, 128, 3, padding='same'),
                 nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
             )
 
         self.decoder0_header = \
             nn.Sequential(
-                ConvNormActBlock(128, 64),
-                ConvNormActBlock(64, 64),
+                ConvNormActBlock(128, 64, 3, padding='same'),
+                ConvNormActBlock(64, 64, 3, padding='same'),
                 nn.Conv2d(64, self.output_dim, kernel_size=1),
             )
 
     def forward(self, x):
+        
         z = self.transformer(x)
         z0, z3, z6, z9, z12 = x, *z
         z3 = z3.transpose(-1, -2).view(-1, self.embed_dim, *self.patch_dim)
         z6 = z6.transpose(-1, -2).view(-1, self.embed_dim, *self.patch_dim)
         z9 = z9.transpose(-1, -2).view(-1, self.embed_dim, *self.patch_dim)
         z12 = z12.transpose(-1, -2).view(-1, self.embed_dim, *self.patch_dim)
-
         z12 = self.decoder12_upsampler(z12)
         z9 = self.decoder9(z9)
         z9 = self.decoder9_upsampler(torch.cat([z9, z12], dim=1))

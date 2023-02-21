@@ -135,21 +135,6 @@ def set_defaults(params):
         "eval_metrics", ["mIOU", "DSC", "Acc"]
     )
     params["model"]["use_bfloat16"] = params["model"].get("use_bfloat16", False)
-    downscale_method = params["model"]["downscale_method"]
-    convs_per_block = params["model"]["convs_per_block"]
-    skip_connect = params["model"]["skip_connect"]
-    if (
-        skip_connect
-        and downscale_method == "strided_conv"
-        and len(convs_per_block) == 1
-    ):
-        raise ValueError(
-            f"skip_connect cannot be True when "
-            f"downscale_method = {downscale_method} "
-            f"and len(convs_per_block) = {len(convs_per_block)}. "
-            f"Either set `skip_connect` = `False` (or) "
-            f"change `downscale_method` = `max_pool`."
-        )
 
     # Pass settings into data loader.
     for model_key in ("mixed_precision", "loss"):

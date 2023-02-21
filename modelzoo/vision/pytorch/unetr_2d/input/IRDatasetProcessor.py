@@ -25,7 +25,7 @@ from modelzoo.vision.pytorch.input.utils import (
     num_tasks,
     task_id,
 )
-from modelzoo.unet.pytorch.input.preprocessing_utils import (
+from modelzoo.vision.pytorch.unetr_2d.input.preprocessing_utils import (
     adjust_brightness_transform,
     normalize_tensor_transform,
     rotation_90_transform,
@@ -224,10 +224,9 @@ class IRDatasetProcessor(Dataset):
         if self.loss_type == "bce":
             mask = mask.to(self.mp_type)
         if self.loss_type == "ce":
-            mask = mask.type(self.mp_type)
+            mask = mask.to(self.mp_type)
         if self.mixed_precision:
             image = image.to(self.mp_type)
-        
         return image, mask
 
     def get_augment_transforms(

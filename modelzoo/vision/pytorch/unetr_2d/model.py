@@ -29,6 +29,9 @@ class UNETRModel(PyTorchBaseModel):
         self.params = params
         model_params = self.params["model"].copy()
         self.loss_type = model_params["loss"]
+        model_params['input_dim'] = self.params['train_input']['IR_channel_level']
+        model_params['img_shape'] = self.params['train_input']['image_shape']
+        model_params['output_dim'] = self.params['train_input']['num_classes']
         self.model = self.build_model(model_params)
 
         self.compute_eval_metrics = model_params.pop("compute_eval_metrics")
@@ -42,12 +45,12 @@ class UNETRModel(PyTorchBaseModel):
                 )
             if "mIOU" in self.eval_metrics:
                 self.eval_metrics_objs["mIOU"] = MeanIOUMetric(
-                    name="eval/mean_iou", num_classes=self.model.num_classes
+                    name="eval/mean_iou", num_classes=self.model.output_dim
                 )
             if "DSC" in self.eval_metrics:
                 self.eval_metrics_objs["DSC"] = DiceCoefficientMetric(
                     name="eval/dice_coefficient",
-                    num_classes=self.model.num_classes,
+                    num_classes=self.model.output_dim,
                 )
 
         super(UNETRModel, self).__init__(

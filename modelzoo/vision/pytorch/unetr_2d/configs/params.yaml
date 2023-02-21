@@ -1,15 +1,16 @@
 # Params for FC MNIST model
 description: "UNet base model params"
 
-train_input: 
+train_input: &train_input
+    data_processor: IRDatasetProcessor
     shuffle: True
     shuffle_buffer_size : 10000
     augment_data: True
-    data_dir: 'data' # Place to store data
+    data_dir: '/home/hangzheng/tissue_segmentation/data' # Place to store data
     shuffle: True
     shuffle_seed: 1
     num_parallel_calls: 0   # 0 means AUTOTUNE
-    num_classes: 11
+    num_classes:  2 # totally 11 class
     # IR_threshould: 0.18
     image_shape: [224,224] #128
     dataset: "IR_dataset"
@@ -18,7 +19,7 @@ train_input:
     augment_data: True
     batch_size: 2
     num_workers: 0
-    drop_last: False
+    drop_last: True
     prefetch_factor: 3
     class_id: 5
 
@@ -30,18 +31,20 @@ eval_input: &eval_input
     num_workers: 2
 
 model:
-    embed_dim: 1024
+    embed_dim: 128
     patch_size: 16
-    num_heads: 16
+    num_heads: 4
     dropout: 0.1
-    mlp_hidden: 4096
-    num_layers: 24
-    ext_layers: [6,12,18,24] #[3, 6, 9, 12]
+    mlp_hidden: 1024
+    num_layers: 4
+    ext_layers: [1,2,3,4] #[3, 6, 9, 12]
+    loss: "bce"
+    mixed_precision: True
 
 optimizer:
     lr: 0.0001
-    optimizer_type: 'adamw' # {'sgd', 'momentum', 'adam', 'adamw'}
-    weight_decay_rate: 5e-5
+    optimizer_type: 'AdamW' # {'sgd', 'momentum', 'adam', 'adamw'}
+    weight_decay_rate: 0.01
     epsilon: 1e-6
     max_gradient_norm: 1.0
     disable_lr_steps_reset: True
