@@ -21,10 +21,10 @@ from modelzoo.common.pytorch.metrics import (
 )
 from modelzoo.common.pytorch.PyTorchBaseModel import PyTorchBaseModel
 from modelzoo.common.pytorch.run_utils import half_dtype_instance
-from modelzoo.vision.pytorch.unet.modeling_unet import UNet
+from modelzoo.vision.pytorch.unetr_2d.modeling_unetr import UNETR
 
 
-class UNetModel(PyTorchBaseModel):
+class UNETRModel(PyTorchBaseModel):
     def __init__(self, params, device=None):
         self.params = params
         model_params = self.params["model"].copy()
@@ -50,12 +50,12 @@ class UNetModel(PyTorchBaseModel):
                     num_classes=self.model.num_classes,
                 )
 
-        super(UNetModel, self).__init__(
+        super(UNETRModel, self).__init__(
             params=params, model=self.model, device=device
         )
 
     def build_model(self, model_params):
-        model = UNet(model_params)
+        model = UNETR(model_params)
         self.loss_fn = model.loss_fn
         return model
 
