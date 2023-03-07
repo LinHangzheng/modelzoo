@@ -31,13 +31,13 @@ eval_input: &eval_input
     num_workers: 2
 
 model:
-    embed_dim: 128
+    embed_dim: 512
     patch_size: 16
-    num_heads: 4
+    num_heads: 16
     dropout: 0.1
-    mlp_hidden: 1024
-    num_layers: 4
-    ext_layers: [1,2,3,4] #[3, 6, 9, 12]
+    mlp_hidden: 512
+    num_layers: 12
+    ext_layers: [3,6,9,12] #[3, 6, 9, 12]
     loss: "bce"
     mixed_precision: True
 
